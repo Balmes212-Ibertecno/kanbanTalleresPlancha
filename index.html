@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Taller - APV Cars & Auto Bros (Firebase)</title>
+    
+    <!-- Carga de SDKs de Firebase (v9 Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background-color: #f1f5f9; padding: 20px; color: #334155; }
+        
+        /* Pantalla de login / Selección de Rol con Clave */
+        .login-overlay { position: fixed; inset: 0; background: #0f172a; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .login-card h2 { margin-bottom: 8px; color: #1e293b; font-size: 20px; }
+        .login-card p { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+        .login-card select, .login-card input { width: 100%; margin-bottom: 12px; padding: 10px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; }
+        .login-card button { width: 100%; padding: 10px; font-size: 14px; background: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .login-card button:hover { background: #1d4ed8; }
+        .error-msg { color: #dc2626; font-size: 12px; margin-bottom: 10px; font-weight: bold; display: none; }
+
+        header { background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        h1 { font-size: 20px; color: #1e293b; }
+        
+        .user-badge { background: #e0f2fe; color: #0369a1; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .btn-logout { background: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; }
+        
+        .btn-toggle-stats { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 5px; }
+        .btn-toggle-stats:hover { background: #cbd5e1; }
+
+        .stats-container { display: none; gap: 15px; margin-bottom: 15px; flex-direction: column; }
+        .stat-card { background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); width: 100%; border-left: 5px solid #cbd5e1; }
+        .stat-card.apv { border-left-color: #0284c7; }
+        .stat-card.autobros { border-left-color: #16a34a; }
+        .stat-card h3 { font-size: 14px; color: #475569; margin-bottom: 10px; display: flex; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
+        
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 10px; }
+        .stat-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; }
+        .stat-box-title { font-size: 11px; font-weight: bold; color: #64748b; margin-bottom: 4px; text-transform: uppercase; }
+        .stat-box-values { font-size: 13px; color: #1e293b; display: flex; flex-direction: column; gap: 2px; }
+
+        .p-form { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        input, select { padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white; text-transform: uppercase; }
+        .p-form input { flex: 1; min-width: 130px; }
+        
+        .toolbar { display: flex; gap: 10px; align-items: center; }
+        button { background: #2563eb; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; }
+        button:hover { background: #1d4ed8; }
+        
+        .tablero-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            width: 100%;
+            align-items: start;
+        }
+
+        @media (max-width: 1200px) { .tablero-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 800px) { .tablero-grid { grid-template-columns: 1fr; } }
+
+        .columna-div { background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; min-height: 500px; }
+        .col-titulo { font-size: 11px; font-weight: bold; color: #475569; border-bottom: 2px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; text-transform: uppercase; }
+        
+        .tarjeta { background: white; border-radius: 6px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 8px; font-size: 12px; border-left: 6px solid #cbd5e1; cursor: pointer; transition: transform 0.1s; position: relative; text-transform: uppercase; }
+        .tarjeta:hover { transform: translateY(-2px); }
+        .tarjeta.t-apv { background-color: #f0f7ff; border-left-color: #0284c7; }
+        .tarjeta.t-apv .badge-taller { background: #e0f2fe; color: #0369a1; }
+        .tarjeta.t-autobros { background-color: #f0fdf4; border-left-color: #16a34a; }
+        .tarjeta.t-autobros .badge-taller { background: #dcfce7; color: #15803d; }
+
+        .badge-taller { padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        .badge-urgente { background-color: #fef2f2; color: #dc2626; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px; border: 1px solid #fecaca; display: inline-block; }
+        .badge-alerta { background-color: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; border: 1px solid #fde68a; display: inline-block; animation: pulse 2s infinite; }
+
+        @keyframes pulse { 0% { opacity: 0.7; } 50% { opacity: 1; } 100% { opacity: 0.7; } }
+
+        .actions { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 5px; border-top: 1px solid #e2e8f0; align-items: center; }
+        .btn-b { color: #ef4444; background: none; border: none; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .btn-m { background: #e2e8f0; border: none; padding: 3px 7px; font-weight: bold; cursor: pointer; border-radius: 3px; font-size: 12px; }
+        .badge-piezas { background: #f1f5f9; color: #475569; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px solid #cbd5e1; }
+        .badge-fotos { background: #fef3c7; color: #d97706; padding: 1px 5px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px solid #fde68a; }
+        .badge-fecha { background: #f3f4f6; color: #374151; padding: 3px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #d1d5db; margin-top: 4px; display: inline-block; cursor: pointer; position: relative; }
+        .badge-factura { background: #ecfdf5; color: #047857; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #a7f3d0; margin-top: 4px; display: inline-block; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 850px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; }
+        .grid-checklist { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 15px 0; }
+        .col-check-box { background: #f8fafc; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .col-check-box h4 { font-size: 12px; color: #334155; margin-bottom: 8px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; text-align: center; text-transform: uppercase; }
+        .col-check-box label { display: block; font-size: 11px; margin-bottom: 6px; cursor: pointer; }
+        .col-check-box input[type="checkbox"] { margin-right: 6px; }
+
+        .drop-zone { background: #f8fafc; border: 2px dashed #cbd5e1; padding: 15px; border-radius: 8px; text-align: center; transition: all 0.2s ease; }
+        .drop-zone.dragover { background: #eff6ff; border-color: #2563eb; }
+        .galeria-fotos { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; justify-content: center; }
+        .miniatura-container { position: relative; width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid #cbd5e1; }
+        .miniatura-container img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+        .btn-eliminar-foto { position: absolute; top: 2px; right: 2px; background: rgba(239, 68, 68, 0.8); color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        .visor-foto { display: none; position: fixed; inset: 0; z-index: 2000; background: rgba(15, 23, 42, 0.94); align-items: center; justify-content: center; padding: 20px; cursor: zoom-out; }
+        .visor-foto.visible { display: flex; }
+        .visor-foto img { max-width: 96vw; max-height: 92vh; object-fit: contain; border-radius: 6px; cursor: default; }
+        .visor-foto-cerrar { position: absolute; top: 12px; right: 14px; width: 42px; height: 42px; border-radius: 50%; background: rgba(255,255,255,.18); color: white; font-size: 26px; }
+
+        .seccion-facturacion { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-top: 15px; }
+        .grid-facturacion { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 8px; }
+        .campo-factura label { font-size: 10px; font-weight: bold; color: #475569; display: block; margin-bottom: 3px; }
+        .campo-factura input { width: 100%; padding: 6px; font-size: 12px; text-align: right; }
+        .input-base-imponible { background: #e0f2fe !important; color: #0369a1; font-weight: bold; }
+
+        .historial-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 15px; max-height: 120px; overflow-y: auto; font-size: 11px; color: #475569; }
+        .historial-item { border-bottom: 1px dotted #cbd5e1; padding: 3px 0; }
+
+        @media (max-width: 760px) {
+            .grid-checklist { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA LOGIN CON CONTRASEÑA -->
+    <div id="login-modal" class="login-overlay">
+        <div class="login-card">
+            <h2>🔐 Acceso al Taller</h2>
+            <p>Selecciona tu perfil e introduce tu contraseña:</p>
+            
+            <select id="login-rol-select">
+                <option value="ADMIN">Tú / Administrador</option>
+                <option value="APV Cars">Taller APV Cars</option>
+                <option value="Auto Bros">Taller Auto Bros</option>
+            </select>
+            
+            <input type="password" id="login-pass" placeholder="Contraseña..." onkeypress="if(event.key==='Enter') iniciarSesion()">
+            
+            <div id="login-error" class="error-msg">⚠️ Contraseña incorrecta</div>
+            
+            <button onclick="iniciarSesion()">ENTRAR AL PANEL</button>
+        </div>
+    </div>
+
+    <header>
+        <h1>⚙️ Panel de Control - APV Cars & Auto Bros</h1>
+        <div style="display:flex; align-items:center; gap: 10px; flex-wrap: wrap;">
+            <div id="user-display" class="user-badge">
+                <span id="user-role-text">ADMIN</span>
+                <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+            </div>
+            <button id="btn-stats-toggle" class="btn-toggle-stats" onclick="toggleEstadisticas()">📈 <span id="txt-btn-stats">VER ESTADÍSTICAS</span></button>
+            <div class="toolbar">
+                <input type="text" id="buscador" placeholder="🔍 BUSCAR MATRÍCULA..." onkeyup="dibujar()" style="width: 160px;">
+                <select id="filtro-taller" onchange="dibujar()">
+                    <option value="TODOS">TODOS LOS TALLERES</option>
+                    <option value="APV Cars">APV CARS</option>
+                    <option value="Auto Bros">AUTO BROS</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div id="stats-container" class="stats-container">
+        <div class="stat-card apv">
+            <h3><span>📊 APV CARS (ESTADÍSTICAS Y FACTURACIÓN)</span> <span>🚗 REPARADOS: <strong id="stat-apv-count">0</strong></span></h3>
+            <div class="stat-grid">
+                <div class="stat-box"><div class="stat-box-title">⏱️ TIEMPO MEDIO</div><div class="stat-box-values"><span id="stat-apv-time">0 DÍAS</span></div></div>
+                <div class="stat-box"><div class="stat-box-title">🛠️ MANO DE OBRA</div><div class="stat-box-values"><span>Total: <strong id="stat-apv-mo-tot">0.00 €</strong></span><span>Media: <strong id="stat-apv-mo-avg">0.00 €</strong></span></div></div>
+                <div class="stat-box"><div class="stat-box-title">⚙️ RECAMBIOS</div><div class="stat-box-values"><span>Total: <strong id="stat-apv-rec-tot">0.00 €</strong></span><span>Media: <strong id="stat-apv-rec-avg">0.00 €</strong></span></div></div>
+                <div class="stat-box"><div class="stat-box-title">🎨 PINTURA</div><div class="stat-box-values"><span>Total: <strong id="stat-apv-pin-tot">0.00 €</strong></span><span>Media: <strong id="stat-apv-pin-avg">0.00 €</strong></span></div></div>
+                <div class="stat-box"><div class="stat-box-title">📉 DESCUENTOS</div><div class="stat-box-values"><span>Total: <strong id="stat-apv-desc-tot">0.00 €</strong></span><span>Media: <strong id="stat-apv-desc-avg">0.00 €</strong></span></div></div>
+                <div class="stat-box" style="background: #e0f2fe; border-color: #bae6fd;"><div class="stat-box-title" style="color: #0369a1;">💶 BASE IMPONIBLE</div><div class="stat-box-values" style="color: #0369a1;"><span>Total: <strong id="stat-apv-base-tot">0.00 €</strong></span><span>Media: <strong id="stat-apv-base-avg">0.00 €</strong></span></div></div>
+            </div>
+        </div>
+        <div class="stat-card autobros">
+            <h3><span>📊 AUTO BROS (ESTADÍSTICAS Y FACTURACIÓN)</span> <span>🚗 REPARADOS: <strong id="stat-autobros-count">0</strong></span></h3>
+            <div class="stat-grid">
+                <div class="stat-box"><div class="stat-box-title">⏱️ TIEMPO MEDIO</div><div class="stat-box-values"><span id="stat-autobros-time">0 DÍAS</span></div></div>
+                <div class="stat-box"><div class="stat-box-title">🛠️ MANO DE OBRA</div><div class="stat-box-values"><span>Total: <strong id="stat-autobros-mo-tot">0.00 €</strong></span><span>Media: <strong id="stat-autobros-mo-avg">0.00 €</strong></span></div></div>
+                <div class="stat-box"><div class="stat-box-title">⚙️ RECAMBIOS</div><div class="stat-box-values"><span>Total: <strong id="stat-autobros-rec-tot">0.00 €</strong></span><span>Media: <strong id="stat-autobros-rec-avg">0.00 €</strong></span></div></div>
+                <div class="stat-box"><div class="stat-box-title">🎨 PINTURA</div><div class="stat-box-values"><span>Total: <strong id="stat-autobros-pin-tot">0.00 €</strong></span><span>Media: <strong id="stat-autobros-pin-avg">0.00 €</strong></span></div></div>
+                <div class="stat-box"><div class="stat-box-title">📉 DESCUENTOS</div><div class="stat-box-values"><span>Total: <strong id="stat-autobros-desc-tot">0.00 €</strong></span><span>Media: <strong id="stat-autobros-desc-avg">0.00 €</strong></span></div></div>
+                <div class="stat-box" style="background: #dcfce7; border-color: #bbf7d0;"><div class="stat-box-title" style="color: #15803d;">💶 BASE IMPONIBLE</div><div class="stat-box-values" style="color: #15803d;"><span>Total: <strong id="stat-autobros-base-tot">0.00 €</strong></span><span>Media: <strong id="stat-autobros-base-avg">0.00 €</strong></span></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORMULARIO DE INGRESO (SOLO VISIBLE PARA ADMIN) -->
+    <div id="p-form-container" class="p-form">
+        <select id="f-taller">
+            <option value="APV Cars">APV CARS</option>
+            <option value="Auto Bros">AUTO BROS</option>
+        </select>
+        <input type="text" id="f-mat" placeholder="MATRÍCULA (EJ: 1234-ABC)" onkeypress="chequearEnter(event)">
+        <input type="text" id="f-mod" placeholder="MARCA / MODELO" onkeypress="chequearEnter(event)">
+        <select id="f-notas">
+            <option value="">-- SIN CARGO ASIGNADO --</option>
+            <option value="CARGO CLIENTE">CARGO CLIENTE</option>
+            <option value="CARGO COMPAÑIA SIN FRANQ">CARGO COMPAÑIA SIN FRANQ</option>
+            <option value="CARGO COMPAÑIA CON FRANQ">CARGO COMPAÑIA CON FRANQ</option>
+        </select>
+        <div style="display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: bold; color: #475569;">
+            📅 ENTREGA: <input type="date" id="f-fecha" style="padding: 6px;">
+        </div>
+        <button onclick="agregarVehiculo()">+ INGRESAR COCHE</button>
+    </div>
+
+    <!-- TABLERO KANBAN DE 5 COLUMNAS -->
+    <div class="tablero-grid">
+        <div id="col-1" class="columna-div"></div>
+        <div id="col-2" class="columna-div"></div>
+        <div id="col-3" class="columna-div"></div>
+        <div id="col-4" class="columna-div"></div>
+        <div id="col-5" class="columna-div"></div>
+    </div>
+
+    <!-- MODAL DE CHECKLIST Y FACTURACIÓN -->
+    <div id="modal-checklist" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-titulo" style="font-size: 16px; color: #1e293b; margin-bottom: 5px; text-transform: uppercase;">LISTA DE CONTROL - VEHÍCULO</h3>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">Selecciona piezas afectadas, marca si es urgente y adjunta fotografías:</p>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                <div style="flex: 1; background: #fef2f2; border: 1px solid #fecaca; padding: 10px; border-radius: 8px;">
+                    <label style="color: #dc2626; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="modal-urgente" style="width: 15px; height: 15px; accent-color: #dc2626; cursor: pointer;" class="solo-admin"> 🚨 URGENTE
+                    </label>
+                </div>
+                <div style="flex: 1; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px; border-radius: 8px;">
+                    <label style="color: #16a34a; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="modal-vehiculo-completo" onchange="toggleVehiculoCompleto(this)" style="width: 15px; height: 15px; accent-color: #16a34a; cursor: pointer;" class="solo-admin"> 🚗 VEHÍCULO COMPLETO (TODAS)
+                    </label>
+                </div>
+            </div>
+
+            <div class="grid-checklist">
+                <div class="col-check-box">
+                    <h4><label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 11px; color: #1e293b;"><input type="checkbox" onchange="toggleColumnaCheck(this, 'izq')" class="solo-admin"> LADO IZQUIERDO</label></h4>
+                    <label><input type="checkbox" value="ALETA DELANTERA IZQUIERDA" class="chk-pieza chk-izq solo-admin"> ALETA DELANTERA IZQ.</label>
+                    <label><input type="checkbox" value="PUERTA DELANTERA IZQUIERDA" class="chk-pieza chk-izq solo-admin"> PUERTA DELANTERA IZQ.</label>
+                    <label><input type="checkbox" value="PUERTA TRASERA IZQUIERDA" class="chk-pieza chk-izq solo-admin"> PUERTA TRASERA IZQ.</label>
+                    <label><input type="checkbox" value="ALETA TRASERA IZQUIERDA" class="chk-pieza chk-izq solo-admin"> ALETA TRASERA IZQ.</label>
+                </div>
+                <div class="col-check-box">
+                    <h4>EJE CENTRAL</h4>
+                    <label><input type="checkbox" value="PARAGOLPES DELANTERO" class="chk-pieza chk-cen solo-admin"> PARAGOLPES DELANTERO</label>
+                    <label><input type="checkbox" value="CAPÓ" class="chk-pieza chk-cen solo-admin"> CAPÓ</label>
+                    <label><input type="checkbox" value="TECHO" class="chk-pieza chk-cen solo-admin"> TECHO</label>
+                    <label><input type="checkbox" value="PORTÓN TRASERO" class="chk-pieza chk-cen solo-admin"> PORTÓN TRASERO</label>
+                    <label><input type="checkbox" value="PARAGOLPES TRASERO" class="chk-pieza chk-cen solo-admin"> PARAGOLPES TRASERO</label>
+                </div>
+                <div class="col-check-box">
+                    <h4><label style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 11px; color: #1e293b;"><input type="checkbox" onchange="toggleColumnaCheck(this, 'der')" class="solo-admin"> LADO DERECHO</label></h4>
+                    <label><input type="checkbox" value="ALETA DELANTERA DERECHA" class="chk-pieza chk-der solo-admin"> ALETA DELANTERA DER.</label>
+                    <label><input type="checkbox" value="PUERTA DELANTERA DERECHA" class="chk-pieza chk-der solo-admin"> PUERTA DELANTERA DER.</label>
+                    <label><input type="checkbox" value="PUERTA TRASERA DERECHA" class="chk-pieza chk-der solo-admin"> PUERTA TRASERA DER.</label>
+                    <label><input type="checkbox" value="ALETA TRASERA DERECHA" class="chk-pieza chk-der solo-admin"> ALETA TRASERA DER.</label>
+                </div>
+            </div>
+
+            <div id="seccion-facturacion" class="seccion-facturacion">
+                <h4 style="font-size: 11px; color: #334155; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">💶 IMPORTES Y CONCEPTO DE FACTURACIÓN</h4>
+                <div class="grid-facturacion">
+                    <div class="campo-factura"><label>MANO DE OBRA (€)</label><input type="number" step="0.01" id="m-mano-obra" value="0.00" oninput="calcularBaseImponible()" class="solo-admin"></div>
+                    <div class="campo-factura"><label>RECAMBIOS (€)</label><input type="number" step="0.01" id="m-recambios" value="0.00" oninput="calcularBaseImponible()" class="solo-admin"></div>
+                    <div class="campo-factura"><label>PINTURA (€)</label><input type="number" step="0.01" id="m-pintura" value="0.00" oninput="calcularBaseImponible()" class="solo-admin"></div>
+                    <div class="campo-factura"><label>DESCUENTOS (€)</label><input type="number" step="0.01" id="m-descuentos" value="0.00" oninput="calcularBaseImponible()" class="solo-admin"></div>
+                    <div class="campo-factura"><label>BASE IMPONIBLE (€)</label><input type="text" id="m-base-imponible" value="0.00" readonly class="input-base-imponible"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 10px;">
+                <label style="font-size: 11px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">📝 NOTAS / OBSERVACIONES LIBRES:</label>
+                <textarea id="modal-texto-libre" style="width: 100%; height: 60px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; text-transform: uppercase;" placeholder="OBSERVACIONES..."></textarea>
+            </div>
+
+            <div style="margin-top: 12px;">
+                <label style="font-size: 11px; font-weight: bold; color: #475569; display: block; margin-bottom: 6px;">📷 FOTOGRAFÍAS DE LOS DAÑOS:</label>
+                <div id="drop-zone" class="drop-zone" ondragover="permitirSoltar(event)" ondragleave="salirZona(event)" ondrop="soltarArchivos(event)">
+                    <p style="font-size: 12px; color: #64748b; margin-bottom: 6px;">📁 ARRASTRA TUS FOTOS AQUÍ O</p>
+                    <input type="file" id="input-fotos" accept="image/*" multiple onchange="manejarSubidaFotos(event)" style="font-size: 11px;">
+                    <div id="galeria-preview" class="galeria-fotos"></div>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <label style="font-size: 11px; font-weight: bold; color: #475569; display: block; margin-bottom: 4px;">📜 HISTORIAL DE ACTIVIDAD Y CAMBIOS:</label>
+                <div id="modal-historial" class="historial-box">
+                    <div class="historial-item">Cargando historial...</div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                <button onclick="cerrarModal()" style="background: #64748b;">CANCELAR</button>
+                <button onclick="guardarChecklist()">GUARDAR CAMBIOS</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="visor-foto" class="visor-foto" onclick="cerrarVisorFoto(event)">
+        <button type="button" class="visor-foto-cerrar" onclick="cerrarVisorFoto(event)">×</button>
+        <img id="visor-foto-img" src="" alt="Ampliada">
+    </div>
+
+    <script>
+        // CONFIGURACIÓN DE FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyDJnWhP7nUNs1QoU5RlPuUkR0giKx1ti4I",
+            authDomain: "control-taller-pintura.firebaseapp.com",
+            databaseURL: "https://control-taller-pintura-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "control-taller-pintura",
+            storageBucket: "control-taller-pintura.firebasestorage.app",
+            messagingSenderId: "695966363613",
+            appId: "1:695966363613:web:19fd401b3098905f62d034"
+        };
+
+        // DICCIONARIO DE CONTRASEÑAS POR PERFIL
+        const CREDENCIALES = {
+            "ADMIN": "admin123",
+            "APV Cars": "apv2026",
+            "Auto Bros": "autobros2026"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let coches = [];
+        let usuarioActual = localStorage.getItem('taller_rol') || null;
+        let cocheIdActual = null;
+        let fotosTemporales = [];
+
+        const cols = [
+            "Pendiente Presupuesto/peritacion", 
+            "pendiente de recogida", 
+            "en taller reparador", 
+            "Pendiente de facturar", 
+            "archivado"
+        ];
+
+        function comprobarSesion() {
+            if (!usuarioActual) {
+                document.getElementById('login-modal').style.display = 'flex';
+            } else {
+                document.getElementById('login-modal').style.display = 'none';
+                document.getElementById('user-role-text').innerText = usuarioActual === 'ADMIN' ? '👑 TÚ (ADMIN)' : `🏢 ${usuarioActual.toUpperCase()}`;
+                aplicarPermisosRol();
+                escucharFirebase();
+            }
+        }
+
+        function iniciarSesion() {
+            const selectRol = document.getElementById('login-rol-select').value;
+            const passInput = document.getElementById('login-pass').value;
+            const errorDiv = document.getElementById('login-error');
+
+            if (CREDENCIALES[selectRol] && CREDENCIALES[selectRol] === passInput) {
+                errorDiv.style.display = 'none';
+                usuarioActual = selectRol;
+                localStorage.setItem('taller_rol', usuarioActual);
+                document.getElementById('login-pass').value = '';
+                comprobarSesion();
+            } else {
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('taller_rol');
+            usuarioActual = null;
+            location.reload();
+        }
+
+        function aplicarPermisosRol() {
+            const esAdmin = (usuarioActual === 'ADMIN');
+            
+            const selectorFiltro = document.getElementById('filtro-taller');
+            const formCrear = document.getElementById('p-form-container');
+            const btnStats = document.getElementById('btn-stats-toggle');
+
+            if (!esAdmin) {
+                selectorFiltro.value = usuarioActual;
+                selectorFiltro.disabled = true;
+                formCrear.style.display = 'none';
+                btnStats.style.display = 'none';
+            } else {
+                selectorFiltro.disabled = false;
+                formCrear.style.display = 'flex';
+                btnStats.style.display = 'flex';
+            }
+        }
+
+        function escucharFirebase() {
+            db.collection("vehiculos").onSnapshot((snapshot) => {
+                coches = [];
+                snapshot.forEach((doc) => {
+                    coches.push({ idDoc: doc.id, ...doc.data() });
+                });
+                dibujar();
+            });
+        }
+
+        function toggleEstadisticas() {
+            const contenedor = document.getElementById('stats-container');
+            const textoBoton = document.getElementById('txt-btn-stats');
+            if (contenedor.style.display === 'flex') {
+                contenedor.style.display = 'none';
+                textoBoton.innerText = "VER ESTADÍSTICAS";
+            } else {
+                contenedor.style.display = 'flex';
+                textoBoton.innerText = "OCULTAR ESTADÍSTICAS";
+            }
+        }
+
+        function chequearEnter(e) { if (e.key === 'Enter') agregarVehiculo(); }
+
+        function formatearFecha(fechaStr) {
+            if (!fechaStr) return 'SIN FECHA';
+            const partes = fechaStr.split('-');
+            return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : fechaStr;
+        }
+
+        function actualizarFechaTarjeta(idDoc, event, inputElem) {
+            event.stopPropagation();
+            if (usuarioActual !== 'ADMIN') return;
+            const nuevaFecha = inputElem.value;
+            registrarHistorialYGuardar(idDoc, `Cambió la fecha de entrega a ${formatearFecha(nuevaFecha)}`, { fechaEntrega: nuevaFecha });
+        }
+
+        function calcularBaseImponible() {
+            let mo = parseFloat(document.getElementById('m-mano-obra').value) || 0;
+            let rec = parseFloat(document.getElementById('m-recambios').value) || 0;
+            let pin = parseFloat(document.getElementById('m-pintura').value) || 0;
+            let desc = parseFloat(document.getElementById('m-descuentos').value) || 0;
+            document.getElementById('m-base-imponible').value = ((mo + rec + pin) - desc).toFixed(2);
+        }
+
+        function calcularEstadisticas() {
+            if (usuarioActual !== 'ADMIN') return;
+
+            let apvReparados = coches.filter(c => c.Taller === "APV Cars" && c.columna === 5);
+            let autobrosReparados = coches.filter(c => c.Taller === "Auto Bros" && c.columna === 5);
+
+            document.getElementById('stat-apv-count').innerText = apvReparados.length;
+            document.getElementById('stat-autobros-count').innerText = autobrosReparados.length;
+
+            function procesarMetricasTaller(lista, prefijo) {
+                let n = lista.length;
+                let moTot = 0, recTot = 0, pinTot = 0, descTot = 0, baseTot = 0;
+                lista.forEach(c => {
+                    moTot += (c.manoObra || 0); recTot += (c.recambios || 0);
+                    pinTot += (c.pintura || 0); descTot += (c.descuentos || 0); baseTot += (c.baseImponible || 0);
+                });
+                document.getElementById(`${prefijo}-mo-tot`).innerText = moTot.toFixed(2) + " €";
+                document.getElementById(`${prefijo}-mo-avg`).innerText = (n > 0 ? moTot / n : 0).toFixed(2) + " €";
+                document.getElementById(`${prefijo}-rec-tot`).innerText = recTot.toFixed(2) + " €";
+                document.getElementById(`${prefijo}-rec-avg`).innerText = (n > 0 ? recTot / n : 0).toFixed(2) + " €";
+                document.getElementById(`${prefijo}-pin-tot`).innerText = pinTot.toFixed(2) + " €";
+                document.getElementById(`${prefijo}-pin-avg`).innerText = (n > 0 ? pinTot / n : 0).toFixed(2) + " €";
+                document.getElementById(`${prefijo}-desc-tot`).innerText = descTot.toFixed(2) + " €";
+                document.getElementById(`${prefijo}-desc-avg`).innerText = (n > 0 ? descTot / n : 0).toFixed(2) + " €";
+                document.getElementById(`${prefijo}-base-tot`).innerText = baseTot.toFixed(2) + " €";
+                document.getElementById(`${prefijo}-base-avg`).innerText = (n > 0 ? baseTot / n : 0).toFixed(2) + " €";
+            }
+
+            procesarMetricasTaller(apvReparados, 'stat-apv');
+            procesarMetricasTaller(autobrosReparados, 'stat-autobros');
+
+            function tiempoMedio(lista) {
+                if (lista.length === 0) return "0 DÍAS";
+                let total = 0, ahora = Date.now();
+                lista.forEach(c => total += (ahora - (c.fechaIngreso || c.id)) / (1000 * 60 * 60 * 24));
+                return Math.round(total / lista.length) + " DÍAS";
+            }
+            document.getElementById('stat-apv-time').innerText = tiempoMedio(apvReparados);
+            document.getElementById('stat-autobros-time').innerText = tiempoMedio(autobrosReparados);
+        }
+
+        function dibujar() {
+            const buscador = document.getElementById('buscador').value.toUpperCase();
+            const esAdmin = (usuarioActual === 'ADMIN');
+            const tallerFiltro = esAdmin ? document.getElementById('filtro-taller').value : usuarioActual;
+
+            cols.forEach((n, idx) => {
+                const cNum = idx + 1;
+                const columnaDiv = document.getElementById(`col-${cNum}`);
+                if (!columnaDiv) return;
+
+                const filtrados = coches.filter(c => {
+                    let matchCol = (c.columna === cNum);
+                    let matchTaller = (tallerFiltro === "TODOS" || c.Taller === tallerFiltro);
+                    let matchTexto = (c.matricula.toUpperCase().includes(buscador) || c.modelo.toUpperCase().includes(buscador));
+                    return matchCol && matchTaller && matchTexto;
+                });
+
+                let colHtml = `<div class="col-titulo"><span>${n.toUpperCase()}</span><span>${filtrados.length}</span></div>`;
+
+                filtrados.forEach(c => {
+                    const claseTaller = (c.Taller === "APV Cars") ? "t-apv" : "t-autobros";
+                    const urg = c.urgente ? `<div style="margin-top: 4px;"><span class="badge-urgente">🚨 URGENTE ✓</span></div>` : '';
+                    const alertaNuevo = (c.ultimoModificador && c.ultimoModificador !== usuarioActual) ? `<div style="margin-top: 4px;"><span class="badge-alerta">🔔 NUEVO CAMBIO (${c.ultimoModificador})</span></div>` : '';
+                    const pza = c.piezas && c.piezas.length > 0 ? `<span class="badge-piezas">🛠️ ${c.piezas.length} PZA</span>` : '';
+                    const fts = c.fotos && c.fotos.length > 0 ? `<span class="badge-fotos">📷 ${c.fotos.length} FOTO(S)</span>` : '';
+                    const base = (esAdmin && c.baseImponible > 0) ? `<div class="badge-factura">💶 BASE: ${c.baseImponible.toFixed(2)} €</div>` : '';
+
+                    let botonesAccion = '';
+                    if (esAdmin) {
+                        botonesAccion = `
+                            <div class="actions" onclick="event.stopPropagation()">
+                                <button onclick="borrar('${c.idDoc}')" class="btn-b">BORRAR</button>
+                                <div>
+                                    ${cNum > 1 ? `<button onclick="mover('${c.idDoc}', ${cNum-1})" class="btn-m">&lt;</button>` : ''}
+                                    ${cNum < 5 ? `<button onclick="mover('${c.idDoc}', ${cNum+1})" class="btn-m">&gt;</button>` : ''}
+                                </div>
+                            </div>`;
+                    }
+
+                    colHtml += `
+                        <div class="tarjeta ${claseTaller}" onclick="abrirChecklist('${c.idDoc}', event)">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <span class="badge-taller">${c.Taller.toUpperCase()}</span>
+                                <strong style="font-size:13px;">${c.matricula.toUpperCase()}</strong>
+                            </div>
+                            <div style="font-weight: 500; color: #0f172a; margin-top:2px;">${c.modelo.toUpperCase()}</div>
+                            ${c.notas ? `<div style="font-weight: bold; color: #334155; margin-top: 3px; font-size: 11px;">📌 ${c.notas.toUpperCase()}</div>` : ''}
+                            ${urg}
+                            ${alertaNuevo}
+                            <div class="badge-fecha" onclick="event.stopPropagation()">
+                                📅 ENTREGA: <span style="font-weight:normal;">${formatearFecha(c.fechaEntrega)}</span>
+                                ${esAdmin ? `<input type="date" value="${c.fechaEntrega || ''}" style="position:absolute; inset:0; opacity:0; width:100%; height:100%; cursor:pointer;" onchange="actualizarFechaTarjeta('${c.idDoc}', event, this)">` : ''}
+                            </div>
+                            ${base}
+                            ${c.textoLibre ? `<div style="font-style: italic; color: #64748b; margin-top: 2px; font-size: 11px;">💬 ${c.textoLibre.toUpperCase()}</div>` : ''}
+                            <div style="margin-top: 6px; display:flex; gap:4px;">${pza} ${fts}</div>
+                            ${botonesAccion}
+                        </div>`;
+                });
+                columnaDiv.innerHTML = colHtml;
+            });
+            calcularEstadisticas();
+        }
+
+        function abrirChecklist(idDoc, event) {
+            cocheIdActual = idDoc;
+            const c = coches.find(x => x.idDoc === idDoc);
+            if(!c) return;
+
+            const esAdmin = (usuarioActual === 'ADMIN');
+
+            document.getElementById('modal-titulo').innerText = `LISTA DE CONTROL - ${c.matricula.toUpperCase()} (${c.modelo.toUpperCase()})`;
+            document.getElementById('modal-urgente').checked = !!c.urgente;
+            document.getElementById('modal-vehiculo-completo').checked = false;
+
+            document.querySelectorAll('.chk-pieza').forEach(chk => {
+                chk.checked = c.piezas && c.piezas.includes(chk.value);
+            });
+
+            document.getElementById('m-mano-obra').value = (c.manoObra || 0).toFixed(2);
+            document.getElementById('m-recambios').value = (c.recambios || 0).toFixed(2);
+            document.getElementById('m-pintura').value = (c.pintura || 0).toFixed(2);
+            document.getElementById('m-descuentos').value = (c.descuentos || 0).toFixed(2);
+            calcularBaseImponible();
+
+            document.getElementById('modal-texto-libre').value = (c.textoLibre || '').toUpperCase();
+            fotosTemporales = c.fotos ? [...c.fotos] : [];
+            actualizarGaleriaPreview();
+
+            document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdmin);
+            document.getElementById('seccion-facturacion').style.display = esAdmin ? 'block' : 'none';
+
+            const contHistorial = document.getElementById('modal-historial');
+            if (c.historial && c.historial.length > 0) {
+                contHistorial.innerHTML = c.historial.map(h => `<div class="historial-item"><strong>${h.fecha} (${h.usuario}):</strong> ${h.accion}</div>`).reverse().join('');
+            } else {
+                contHistorial.innerHTML = '<div class="historial-item">Sin historial registrado.</div>';
+            }
+
+            document.getElementById('modal-checklist').style.display = 'flex';
+        }
+
+        function toggleColumnaCheck(master, lado) {
+            if (usuarioActual !== 'ADMIN') return;
+            document.querySelectorAll(`.chk-${lado}`).forEach(chk => chk.checked = master.checked);
+        }
+
+        function toggleVehiculoCompleto(master) {
+            if (usuarioActual !== 'ADMIN') return;
+            document.querySelectorAll('.chk-pieza').forEach(chk => chk.checked = master.checked);
+        }
+
+        function permitirSoltar(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragover'); }
+        function salirZona(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('dragover'); }
+        function soltarArchivos(e) { 
+            e.preventDefault(); 
+            document.getElementById('drop-zone').classList.remove('dragover');
+            procesarArchivosFotos(e.dataTransfer.files); 
+        }
+
+        function manejarSubidaFotos(e) {
+            procesarArchivosFotos(e.target.files);
+            e.target.value = '';
+        }
+
+        function procesarArchivosFotos(archivos) {
+            if(!archivos) return;
+            Array.from(archivos).forEach(archivo => {
+                if(archivo.type.startsWith('image/')) {
+                    const lector = new FileReader();
+                    lector.onload = function(evt) {
+                        fotosTemporales.push(evt.target.result);
+                        actualizarGaleriaPreview();
+                    };
+                    lector.readAsDataURL(archivo);
+                }
+            });
+        }
+
+        function actualizarGaleriaPreview() {
+            const cont = document.getElementById('galeria-preview');
+            cont.innerHTML = '';
+            fotosTemporales.forEach((foto, index) => {
+                cont.innerHTML += `
+                    <div class="miniatura-container">
+                        <img src="${foto}" alt="Foto" onclick="abrirVisorFoto(event, ${index})">
+                        <button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>
+                    </div>`;
+            });
+        }
+
+        function abrirVisorFoto(e, index) {
+            e.stopPropagation();
+            document.getElementById('visor-foto-img').src = fotosTemporales[index];
+            document.getElementById('visor-foto').classList.add('visible');
+        }
+
+        function cerrarVisorFoto(e) {
+            e.stopPropagation();
+            document.getElementById('visor-foto').classList.remove('visible');
+        }
+
+        function eliminarFotoTemporal(index) {
+            fotosTemporales.splice(index, 1);
+            actualizarGaleriaPreview();
+        }
+
+        function cerrarModal() {
+            document.getElementById('modal-checklist').style.display = 'none';
+            cocheIdActual = null;
+            fotosTemporales = [];
+        }
+
+        function guardarChecklist() {
+            if(!cocheIdActual) return;
+            const c = coches.find(x => x.idDoc === cocheIdActual);
+            if(!c) return;
+
+            const esAdmin = (usuarioActual === 'ADMIN');
+            let cambiosTexto = [];
+
+            let datosActualizar = {
+                textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
+                fotos: [...fotosTemporales],
+                ultimoModificador: usuarioActual,
+                fechaUltimaModificacion: Date.now()
+            };
+
+            if (c.textoLibre !== datosActualizar.textoLibre) cambiosTexto.push("Añadió/modificó observaciones");
+            if ((c.fotos ? c.fotos.length : 0) !== datosActualizar.fotos.length) cambiosTexto.push("Actualizó fotografías");
+
+            if (esAdmin) {
+                const seleccionadas = [];
+                document.querySelectorAll('.chk-pieza:checked').forEach(chk => seleccionadas.push(chk.value));
+                datosActualizar.piezas = seleccionadas;
+                datosActualizar.urgente = document.getElementById('modal-urgente').checked;
+                datosActualizar.manoObra = parseFloat(document.getElementById('m-mano-obra').value) || 0;
+                datosActualizar.recambios = parseFloat(document.getElementById('m-recambios').value) || 0;
+                datosActualizar.pintura = parseFloat(document.getElementById('m-pintura').value) || 0;
+                datosActualizar.descuentos = parseFloat(document.getElementById('m-descuentos').value) || 0;
+                datosActualizar.baseImponible = (datosActualizar.manoObra + datosActualizar.recambios + datosActualizar.pintura) - datosActualizar.descuentos;
+                
+                cambiosTexto.push("Modificó datos generales/piezas");
+            }
+
+            const detalleAccion = cambiosTexto.join(", ") || "Guardó cambios";
+            registrarHistorialYGuardar(cocheIdActual, detalleAccion, datosActualizar);
+            cerrarModal();
+        }
+
+        function mover(idDoc, nCol) {
+            if (usuarioActual !== 'ADMIN') return;
+            registrarHistorialYGuardar(idDoc, `Movió el vehículo a la columna ${nCol} (${cols[nCol-1]})`, { 
+                columna: nCol,
+                ultimoModificador: usuarioActual
+            });
+        }
+
+        function borrar(idDoc) {
+            if (usuarioActual !== 'ADMIN') return;
+            if(confirm("¿ELIMINAR ESTE VEHÍCULO DEFINITIVAMENTE DE FIREBASE?")) {
+                db.collection("vehiculos").doc(idDoc).delete();
+            }
+        }
+
+        function agregarVehiculo() {
+            if (usuarioActual !== 'ADMIN') return;
+
+            const matInput = document.getElementById('f-mat');
+            const modInput = document.getElementById('f-mod');
+            const tallerInput = document.getElementById('f-taller');
+            const notasInput = document.getElementById('f-notas');
+            const fechaInput = document.getElementById('f-fecha');
+
+            const mat = matInput.value.trim().toUpperCase();
+            if(!mat) { alert("¡ESCRIBE LA MATRÍCULA!"); matInput.focus(); return; }
+            
+            const mod = modInput.value.trim().toUpperCase();
+            const fechaActualStr = new Date().toLocaleString('es-ES');
+
+            const nuevoCoche = {
+                id: Date.now(),
+                fechaIngreso: Date.now(),
+                Taller: tallerInput.value,
+                matricula: mat,
+                modelo: mod || "GENÉRICO",
+                notas: notasInput.value,
+                urgente: false,
+                fechaEntrega: fechaInput.value,
+                columna: 1,
+                piezas: [],
+                textoLibre: "",
+                fotos: [],
+                manoObra: 0, recambios: 0, pintura: 0, descuentos: 0, baseImponible: 0,
+                ultimoModificador: usuarioActual,
+                historial: [{ fecha: fechaActualStr, usuario: usuarioActual, accion: "Ingresó el vehículo al taller" }]
+            };
+
+            db.collection("vehiculos").add(nuevoCoche);
+
+            matInput.value = '';
+            modInput.value = '';
+            notasInput.value = '';
+            fechaInput.value = '';
+            matInput.focus();
+        }
+
+        function registrarHistorialYGuardar(idDoc, accionRealizada, objetoModificaciones) {
+            const c = coches.find(x => x.idDoc === idDoc);
+            if (!c) return;
+
+            const historialPrevio = c.historial || [];
+            const nuevoEvento = {
+                fecha: new Date().toLocaleString('es-ES'),
+                usuario: usuarioActual,
+                accion: accionRealizada
+            };
+
+            objetoModificaciones.historial = [...historialPrevio, nuevoEvento];
+            objetoModificaciones.ultimoModificador = usuarioActual;
+
+            db.collection("vehiculos").doc(idDoc).update(objetoModificaciones);
+        }
+
+        window.onload = function() { comprobarSesion(); };
+    </script>
+</body>
+</html>
