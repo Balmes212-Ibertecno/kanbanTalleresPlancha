@@ -8,21 +8,22 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
             background-color: #A3A3A3; 
             padding: 12px; 
             color: #ffffff; 
+            -webkit-font-smoothing: antialiased;
         }
         
         /* Pantalla de Login */
         .login-overlay { position: fixed; inset: 0; background: rgba(18, 18, 18, 0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; }
         .login-card { background: #272d34; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #f1f5f9; border: 1px solid #3b424a; }
-        .login-card h2 { margin-bottom: 8px; color: #38bdf8; font-size: 20px; }
+        .login-card h2 { margin-bottom: 8px; color: #38bdf8; font-size: 20px; font-weight: 600; }
         .login-card p { font-size: 13px; color: #cbd5e1; margin-bottom: 20px; }
         .login-card select, .login-card input { width: 100%; margin-bottom: 12px; padding: 10px; font-size: 14px; border: 1px solid #3b424a; border-radius: 6px; background: #1a1d21; color: #fff; }
-        .login-card button { width: 100%; padding: 10px; font-size: 14px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .login-card button { width: 100%; padding: 10px; font-size: 14px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 5px; }
         .login-card button:hover { background: #0369a1; }
-        .error-msg { color: #f87171; font-size: 12px; margin-bottom: 10px; font-weight: bold; display: none; }
+        .error-msg { color: #f87171; font-size: 12px; margin-bottom: 10px; font-weight: 600; display: none; }
 
         header { 
             background: #1f2327; 
@@ -40,31 +41,31 @@
             top: 0;
             z-index: 100;
         }
-        h1 { font-size: 16px; color: #f8fafc; font-weight: 700; }
+        h1 { font-size: 16px; color: #f8fafc; font-weight: 600; }
         
-        .user-badge { background: #0284c7; color: #ffffff; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .user-badge { background: #0284c7; color: #ffffff; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .btn-logout { background: #dc2626; color: white; border: none; padding: 3px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
 
         .p-form { background: #272d34; padding: 10px; border-radius: 6px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border: 1px solid #3b424a; }
         
         input, select, textarea { 
+            font-family: inherit;
             padding: 6px 8px; 
             border: 1px solid #5a5a5a; 
             border-radius: 4px; 
             font-size: 12px; 
-            background-color: #818181 !important; 
+            background-color: #383838 !important; 
             color: #ffffff !important; 
             text-transform: uppercase; 
-            font-weight: 800 !important; 
-            letter-spacing: 0.5px;
-            text-shadow: 0px 1px 2px rgba(0,0,0,0.6);
+            font-weight: 500 !important; 
+            letter-spacing: 0.3px;
         }
-        input::placeholder, textarea::placeholder { color: #f1f5f9; font-weight: 700; }
+        input::placeholder, textarea::placeholder { color: #cbd5e1; font-weight: 400; }
 
         #f-taller, #filtro-taller {
             font-size: 12px !important;
             padding: 8px 12px !important;
-            font-weight: 900 !important;
+            font-weight: 600 !important;
             min-width: 130px !important;
         }
 
@@ -72,7 +73,7 @@
         #f-mod { max-width: 200px !important; min-width: 120px !important; }
         
         .toolbar { display: flex; gap: 8px; align-items: center; }
-        button { background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 11px; }
+        button { font-family: inherit; background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; }
         button:hover { background: #0369a1; }
         
         .tablero-grid {
@@ -101,7 +102,7 @@
 
         .col-titulo { 
             font-size: 11px; 
-            font-weight: 800; 
+            font-weight: 700; 
             color: #ffffff; 
             padding: 8px 10px; 
             border-radius: 4px; 
@@ -110,7 +111,7 @@
             justify-content: space-between; 
             align-items: center; 
             text-transform: uppercase; 
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
@@ -121,21 +122,20 @@
         .col-titulo-5 { background-color: #525966; }
         
         .tarjeta { 
-            background-color: #383838 !important; 
-            border-radius: 5px; 
+            background-color: #2b3036 !important; 
+            border-radius: 6px; 
             padding: 10px; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5); 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4); 
             margin-bottom: 10px; 
-            font-family: Arial, sans-serif; 
             font-size: 12px; 
-            border-left: 8px solid #64748b; 
+            border-left: 6px solid #64748b; 
             cursor: pointer; 
             transition: transform 0.1s, background-color 0.1s, opacity 0.2s; 
             text-transform: uppercase; 
             color: #e2e8f0; 
-            border-top: 1px solid #282d33;
-            border-right: 1px solid #282d33;
-            border-bottom: 1px solid #282d33;
+            border-top: 1px solid #3b424a;
+            border-right: 1px solid #3b424a;
+            border-bottom: 1px solid #3b424a;
         }
         .tarjeta:active { cursor: grabbing; }
         .tarjeta.dragging { opacity: 0.3; }
@@ -145,30 +145,30 @@
         .tarjeta.t-apv .badge-taller { 
             background-color: #00d2ff !important; 
             color: #002233 !important; 
-            font-weight: 900;
+            font-weight: 700;
             letter-spacing: 0.5px;
-            box-shadow: 0 0 8px rgba(0, 210, 255, 0.4);
+            box-shadow: 0 0 6px rgba(0, 210, 255, 0.3);
         }
         
         .tarjeta.t-autobros { border-left-color: #10b981 !important; } 
         .tarjeta.t-autobros .badge-taller { 
             background-color: #10b981 !important; 
             color: #022c22 !important; 
-            font-weight: 900;
+            font-weight: 700;
             letter-spacing: 0.5px;
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
         }
 
         .badge-taller { padding: 3px 8px; border-radius: 4px; font-size: 10px; display: inline-block; }
-        .badge-urgente { background-color: #991b1b; color: #fef2f2; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 9px; border: 1px solid #dc2626; display: inline-block; }
+        .badge-urgente { background-color: #991b1b; color: #fef2f2; padding: 2px 6px; border-radius: 3px; font-weight: 600; font-size: 9px; border: 1px solid #dc2626; display: inline-block; }
 
-        .actions { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 5px; border-top: 1px solid #282d33; align-items: center; }
-        .btn-b { color: #f87171; background: none; border: none; cursor: pointer; font-size: 10px; font-weight: bold; }
-        .btn-m { background: #272d34; color: #fff; border: 1px solid #3b424a; padding: 1px 5px; font-weight: bold; cursor: pointer; border-radius: 3px; font-size: 10px; }
+        .actions { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 5px; border-top: 1px solid #383838; align-items: center; }
+        .btn-b { color: #f87171; background: none; border: none; cursor: pointer; font-size: 10px; font-weight: 600; }
+        .btn-m { background: #272d34; color: #fff; border: 1px solid #3b424a; padding: 1px 5px; font-weight: 600; cursor: pointer; border-radius: 3px; font-size: 10px; }
         .btn-m:hover { background: #3b424a; }
 
-        .badge-piezas { background: #272d34; color: #f1f5f9; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #4a525d; font-weight: bold; }
-        .badge-fotos { background: #9a3412; color: #ffedd5; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #ea580c; font-weight: bold; }
+        .badge-piezas { background: #1a1d21; color: #f1f5f9; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #4a525d; font-weight: 600; }
+        .badge-fotos { background: #9a3412; color: #ffedd5; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #ea580c; font-weight: 600; }
         
         .badge-fecha-editable { 
             background: transparent !important; 
@@ -176,7 +176,7 @@
             padding: 0; 
             border-radius: 0; 
             font-size: 9px; 
-            font-weight: 800; 
+            font-weight: 600; 
             border: none !important; 
             margin-top: 4px; 
             display: inline-flex; 
@@ -184,15 +184,15 @@
             gap: 4px;
         }
         .badge-fecha-editable input[type="date"] {
-            background-color: #383838 !important;
+            background-color: #1a1d21 !important;
             color: #ffffff !important;
-            border: none !important;
+            border: 1px solid #3b424a !important;
             border-radius: 3px;
             font-size: 10px;
             padding: 2px 4px;
             font-family: inherit;
             cursor: pointer;
-            font-weight: 800;
+            font-weight: 500;
             outline: none !important;
         }
 
@@ -202,7 +202,7 @@
         .modal-content.m-autobros { border: 2px solid #10b981 !important; box-shadow: 0 0 20px rgba(16, 185, 129, 0.35) !important; }
         .grid-checklist { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 12px 0; }
         .col-check-box { background: #15181b; padding: 8px; border: 1px solid #353c45; border-radius: 4px; }
-        .col-check-box h4 { font-size: 10px; color: #38bdf8; margin-bottom: 6px; border-bottom: 1px solid #353c45; padding-bottom: 3px; text-align: center; text-transform: uppercase; }
+        .col-check-box h4 { font-size: 10px; color: #38bdf8; margin-bottom: 6px; border-bottom: 1px solid #353c45; padding-bottom: 3px; text-align: center; text-transform: uppercase; font-weight: 700; }
         .col-check-box label { display: block; font-size: 10px; margin-bottom: 5px; cursor: pointer; color: #cbd5e1; }
         .col-check-box input[type="checkbox"] { margin-right: 5px; accent-color: #0284c7; }
 
@@ -261,8 +261,8 @@
 
     <div id="p-form-container" class="p-form">
         <select id="f-taller" onchange="actualizarColorSelectTaller()">
-            <option value="APV Cars" style="background-color: #00d2ff !important; color: #002233 !important; font-weight: 900;">APV CARS</option>
-            <option value="Auto Bros" style="background-color: #10b981 !important; color: #022c22 !important; font-weight: 900;">AUTO BROS</option>
+            <option value="APV Cars" style="background-color: #00d2ff !important; color: #002233 !important; font-weight: 700;">APV CARS</option>
+            <option value="Auto Bros" style="background-color: #10b981 !important; color: #022c22 !important; font-weight: 700;">AUTO BROS</option>
         </select>
         <input type="text" id="f-mat" placeholder="MATRÍCULA (EJ: 1234-ABC)" onkeypress="chequearEnter(event)">
         <input type="text" id="f-mod" placeholder="MARCA / MODELO" onkeypress="chequearEnter(event)">
@@ -272,8 +272,8 @@
             <option value="CARGO COMPAÑIA SIN FRANQ">CARGO COMPAÑIA SIN FRANQ</option>
             <option value="CARGO COMPAÑIA CON FRANQ">CARGO COMPAÑIA CON FRANQ</option>
         </select>
-        <div style="display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: bold; color: #cbd5e1;">
-            📅 <span style="font-size: 12px; font-weight: 900;">ENTREGA:</span> <input type="date" id="f-fecha" style="padding: 6px 8px; font-size: 12px; font-weight: 800; min-width: 150px;">
+        <div style="display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: #cbd5e1;">
+            📅 <span style="font-size: 12px; font-weight: 700;">ENTREGA:</span> <input type="date" id="f-fecha" style="padding: 6px 8px; font-size: 12px; font-weight: 600; min-width: 150px;">
         </div>
         <button onclick="agregarVehiculo()">+ INGRESAR COCHE</button>
     </div>
@@ -293,12 +293,12 @@
             
             <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
                 <div style="flex: 1; background: #451a1a; border: 1px solid #7f1d1d; padding: 8px; border-radius: 4px;">
-                    <label style="color: #fca5a5; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <label style="color: #fca5a5; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                         <input type="checkbox" id="modal-urgente" style="width: 14px; height: 14px; accent-color: #dc2626; cursor: pointer;" class="solo-admin"> 🚨 URGENTE
                     </label>
                 </div>
                 <div style="flex: 1; background: #064e3b; border: 1px solid #047857; padding: 8px; border-radius: 4px;">
-                    <label style="color: #6ee7b7; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <label style="color: #6ee7b7; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                         <input type="checkbox" id="modal-vehiculo-completo" onchange="toggleVehiculoCompleto(this)" style="width: 14px; height: 14px; accent-color: #16a34a; cursor: pointer;" class="solo-admin"> 🚗 VEHÍCULO COMPLETO (TODAS)
                     </label>
                 </div>
@@ -330,12 +330,12 @@
             </div>
 
             <div style="margin-top: 10px;">
-                <label style="font-size: 10px; font-weight: bold; color: #cbd5e1; display: block; margin-bottom: 3px;">📝 NOTAS / OBSERVACIONES LIBRES:</label>
+                <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 3px;">📝 NOTAS / OBSERVACIONES LIBRES:</label>
                 <textarea id="modal-texto-libre" style="width: 100%; height: 50px; padding: 6px; border-radius: 4px; font-size: 11px; text-transform: uppercase;" placeholder="OBSERVACIONES..."></textarea>
             </div>
 
             <div style="margin-top: 10px;">
-                <label style="font-size: 10px; font-weight: bold; color: #cbd5e1; display: block; margin-bottom: 4px;">📷 FOTOGRAFÍAS DE LOS DAÑOS:</label>
+                <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">📷 FOTOGRAFÍAS DE LOS DAÑOS:</label>
                 <div id="drop-zone" class="drop-zone" ondragover="permitirSoltar(event)" ondragleave="salirZona(event)" ondrop="soltarArchivos(event)">
                     <p style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">📁 ARRASTRA TUS FOTOS AQUÍ O</p>
                     <input type="file" id="input-fotos" accept="image/*" multiple onchange="manejarSubidaFotos(event)" style="font-size: 10px;">
@@ -599,12 +599,12 @@
                              onclick="abrirChecklist('${c.idDoc}', event)">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
                                 <span class="badge-taller">${c.Taller.toUpperCase()}</span>
-                                <div style="text-align: right; font-family: Arial, sans-serif;">
-                                    <div style="font-size: 14px; font-weight: 900; color: #ffffff; font-family: Arial, sans-serif; letter-spacing: 1px; margin-bottom: 2px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">${c.matricula.toUpperCase()}</div>
-                                    <div style="font-size: 12px; font-weight: 600; color: #cbd5e1; letter-spacing: 0.5px;">${c.modelo.toUpperCase()}</div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 14px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; margin-bottom: 2px;">${c.matricula.toUpperCase()}</div>
+                                    <div style="font-size: 12px; font-weight: 500; color: #94a3b8; letter-spacing: 0.3px;">${c.modelo.toUpperCase()}</div>
                                 </div>
                             </div>
-                            ${c.notas ? `<div style="font-weight: bold; color: #cbd5e1; margin-top: 2px; font-size: 9px;">📌 ${c.notas.toUpperCase()}</div>` : ''}
+                            ${c.notas ? `<div style="font-weight: 600; color: #cbd5e1; margin-top: 2px; font-size: 9px;">📌 ${c.notas.toUpperCase()}</div>` : ''}
                             ${urg}
                             
                             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;" onclick="event.stopPropagation()">
@@ -618,7 +618,7 @@
                                 </div>
                             </div>
 
-                            ${c.textoLibre ? `<div style="font-style: italic; color: #a0aec0; margin-top: 3px; font-size: 9px;">💬 ${c.textoLibre.toUpperCase()}</div>` : ''}
+                            ${c.textoLibre ? `<div style="font-style: italic; color: #94a3b8; margin-top: 3px; font-size: 9px;">💬 ${c.textoLibre.toUpperCase()}</div>` : ''}
                             <div style="margin-top: 5px; display:flex; gap:4px;">${pza} ${fts}</div>
                             ${botonesAccion}
                         </div>`;
