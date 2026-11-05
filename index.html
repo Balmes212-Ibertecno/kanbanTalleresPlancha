@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Taller - APV Cars & Auto Bros</title>
-
     <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -25,29 +24,29 @@
         .login-card button:hover { background: #0369a1; }
         .error-msg { color: #f87171; font-size: 12px; margin-bottom: 10px; font-weight: bold; display: none; }
 
-        header { background: #1f2327; padding: 10px 16px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; border: 1px solid #2d333b; }
+        header { 
+            background: #1f2327; 
+            padding: 10px 16px; 
+            border-radius: 6px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
+            margin-bottom: 12px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            border: 1px solid #2d333b;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
         h1 { font-size: 16px; color: #f8fafc; font-weight: 700; }
         
         .user-badge { background: #0284c7; color: #ffffff; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
         .btn-logout { background: #dc2626; color: white; border: none; padding: 3px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
-        
-        .btn-toggle-stats { background: #272d34; color: #f8fafc; border: 1px solid #3b424a; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 11px; display: flex; align-items: center; gap: 5px; }
-        .btn-toggle-stats:hover { background: #3b424a; }
-
-        .stats-container { display: none; gap: 12px; margin-bottom: 12px; flex-direction: column; color: #e2e8f0; }
-        .stat-card { background: #272d34; padding: 12px 16px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); width: 100%; border-left: 5px solid #64748b; border: 1px solid #3b424a; }
-        .stat-card.apv { border-left: 5px solid #00d2ff; }
-        .stat-card.autobros { border-left: 5px solid #10b981; }
-        .stat-card h3 { font-size: 13px; color: #cbd5e1; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px solid #3b424a; padding-bottom: 4px; }
-        
-        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 8px; }
-        .stat-box { background: #1a1d21; border: 1px solid #3b424a; border-radius: 4px; padding: 8px; }
-        .stat-box-title { font-size: 10px; font-weight: bold; color: #94a3b8; margin-bottom: 3px; text-transform: uppercase; }
-        .stat-box-values { font-size: 12px; color: #f8fafc; display: flex; flex-direction: column; gap: 2px; }
 
         .p-form { background: #272d34; padding: 10px; border-radius: 6px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border: 1px solid #3b424a; }
         
-        /* CASILLAS EDITABLES (#818181) Y TEXTO RESALTADO */
         input, select, textarea { 
             padding: 6px 8px; 
             border: 1px solid #5a5a5a; 
@@ -121,14 +120,14 @@
         .col-titulo-4 { background-color: #15803d; }
         .col-titulo-5 { background-color: #525966; }
         
-        /* TARJETAS ANTRACITA NEUTRO */
         .tarjeta { 
             background-color: #383838 !important; 
             border-radius: 5px; 
             padding: 10px; 
             box-shadow: 0 4px 8px rgba(0,0,0,0.5); 
             margin-bottom: 10px; 
-            font-size: 11px; 
+            font-family: Arial, sans-serif; 
+            font-size: 12px; 
             border-left: 8px solid #64748b; 
             cursor: pointer; 
             transition: transform 0.1s, background-color 0.1s, opacity 0.2s; 
@@ -160,13 +159,7 @@
             box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
         }
 
-        .badge-taller { 
-            padding: 3px 8px; 
-            border-radius: 4px; 
-            font-size: 10px; 
-            display: inline-block;
-        }
-
+        .badge-taller { padding: 3px 8px; border-radius: 4px; font-size: 10px; display: inline-block; }
         .badge-urgente { background-color: #991b1b; color: #fef2f2; padding: 2px 6px; border-radius: 3px; font-weight: bold; font-size: 9px; border: 1px solid #dc2626; display: inline-block; }
 
         .actions { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 5px; border-top: 1px solid #282d33; align-items: center; }
@@ -203,11 +196,8 @@
             outline: none !important;
         }
 
-        .badge-reparador { background: #064e3b; color: #6ee7b7; padding: 3px 6px; border-radius: 3px; font-size: 9px; font-weight: bold; border: 1px solid #047857; margin-top: 4px; display: inline-block; }
-        .badge-factura { background: #065f46; color: #a7f3d0; padding: 3px 6px; border-radius: 3px; font-size: 9px; font-weight: bold; border: 1px solid #047857; margin-top: 4px; display: inline-block; }
-
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #272d34; padding: 18px; border-radius: 8px; width: 90%; max-width: 800px; box-shadow: 0 10px 25px rgba(0,0,0,0.7); max-height: 90vh; overflow-y: auto; color: #e2e8f0; border: 2px solid #3b424a; transition: border-color 0.2s ease; }
+        .modal-content { background: #272d34; padding: 18px; border-radius: 8px; width: 90%; max-width: 800px; box-shadow: 0 10px 25px rgba(0,0,0,0.7); max-height: 90vh; overflow-y: auto; color: #e2e8f0; border: 2px solid #3b424a; }
         .modal-content.m-apv { border: 2px solid #00d2ff !important; box-shadow: 0 0 20px rgba(0, 210, 255, 0.35) !important; }
         .modal-content.m-autobros { border: 2px solid #10b981 !important; box-shadow: 0 0 20px rgba(16, 185, 129, 0.35) !important; }
         .grid-checklist { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 12px 0; }
@@ -228,16 +218,7 @@
         .visor-foto img { max-width: 96vw; max-height: 92vh; object-fit: contain; border-radius: 6px; cursor: default; }
         .visor-foto-cerrar { position: absolute; top: 12px; right: 14px; width: 42px; height: 42px; border-radius: 50%; background: rgba(255,255,255,.18); color: white; font-size: 26px; border:none; cursor:pointer;}
 
-        .seccion-facturacion { background: #15181b; border: 1px solid #353c45; border-radius: 4px; padding: 10px; margin-top: 12px; }
-        .grid-facturacion { display: flex; gap: 15px; margin-top: 6px; flex-wrap: wrap; }
-        .campo-factura label { font-size: 10px; font-weight: bold; color: #38bdf8; display: block; margin-bottom: 3px; }
-        .input-moneda-container { position: relative; display: inline-block; width: 100px; }
-        .input-moneda-container input { width: 100%; padding: 4px 18px 4px 6px; font-size: 11px; text-align: right; background: #272d34; border: 1px solid #3b424a; color: #fff; }
-        .input-moneda-container span { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 11px; color: #a0aec0; font-weight: bold; pointer-events: none; }
-
-        @media (max-width: 760px) {
-            .grid-checklist { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 760px) { .grid-checklist { grid-template-columns: 1fr; } }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -249,29 +230,24 @@
         <div class="login-card">
             <h2>🔐 Acceso al Taller</h2>
             <p>Selecciona tu perfil e introduce tu contraseña:</p>
-            
             <select id="login-rol-select">
                 <option value="ADMIN">Tú / Administrador</option>
                 <option value="APV Cars">Taller APV Cars</option>
                 <option value="Auto Bros">Taller Auto Bros</option>
             </select>
-            
             <input type="password" id="login-pass" placeholder="Contraseña..." onkeypress="if(event.key==='Enter') iniciarSesion()">
-            
             <div id="login-error" class="error-msg">⚠️ Contraseña incorrecta</div>
-            
             <button type="button" onclick="iniciarSesion()">ENTRAR AL PANEL</button>
         </div>
     </div>
 
     <header>
-        <h1>⚙️ Control de Taller (Etiquetas Brillantes APV / Auto Bros)</h1>
+        <h1>⚙️ Control de Taller (APV Cars & Auto Bros)</h1>
         <div style="display:flex; align-items:center; gap: 10px; flex-wrap: wrap;">
             <div id="user-display" class="user-badge">
                 <span id="user-role-text">ADMIN</span>
                 <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
             </div>
-            <button id="btn-stats-toggle" class="btn-toggle-stats" onclick="toggleEstadisticas()">📈 <span id="txt-btn-stats">VER ESTADÍSTICAS</span></button>
             <div class="toolbar">
                 <input type="text" id="buscador" placeholder="🔍 BUSCAR MATRÍCULA..." onkeyup="dibujar()" style="width: 230px;">
                 <select id="filtro-taller" onchange="dibujar()">
@@ -283,28 +259,6 @@
         </div>
     </header>
 
-    <div id="stats-container" class="stats-container">
-        <div class="stat-card apv">
-            <h3><span>📊 APV CARS (ESTADÍSTICAS Y FACTURACIÓN)</span> <span>🚗 REPARADOS: <strong id="stat-apv-count">0</strong></span></h3>
-            <div class="stat-grid">
-                <div class="stat-box"><div class="stat-box-title">⏱️ TIEMPO MEDIO REPARACIÓN</div><div class="stat-box-values"><span id="stat-apv-time">0 DÍAS</span></div></div>
-                <div class="stat-box"><div class="stat-box-title">💶 TOTAL PVP COSTE</div><div class="stat-box-values"><span>Total: <strong id="stat-apv-coste-tot">0.00 €</strong></span></div></div>
-                <div class="stat-box"><div class="stat-box-title">💶 TOTAL PVP VENTA</div><div class="stat-box-values"><span>Total: <strong id="stat-apv-venta-tot">0.00 €</strong></span></div></div>
-                <div class="stat-box" style="background: #064e3b; border-color: #047857;"><div class="stat-box-title" style="color: #6ee7b7;">📈 MARGEN ESTIMADO</div><div class="stat-box-values" style="color: #6ee7b7;"><span>Total: <strong id="stat-apv-margen-tot">0.00 €</strong></span></div></div>
-            </div>
-        </div>
-        <div class="stat-card autobros">
-            <h3><span>📊 AUTO BROS (ESTADÍSTICAS Y FACTURACIÓN)</span> <span>🚗 REPARADOS: <strong id="stat-autobros-count">0</strong></span></h3>
-            <div class="stat-grid">
-                <div class="stat-box"><div class="stat-box-title">⏱️ TIEMPO MEDIO REPARACIÓN</div><div class="stat-box-values"><span id="stat-autobros-time">0 DÍAS</span></div></div>
-                <div class="stat-box"><div class="stat-box-title">💶 TOTAL PVP COSTE</div><div class="stat-box-values"><span>Total: <strong id="stat-autobros-coste-tot">0.00 €</strong></span></div></div>
-                <div class="stat-box"><div class="stat-box-title">💶 TOTAL PVP VENTA</div><div class="stat-box-values"><span>Total: <strong id="stat-autobros-venta-tot">0.00 €</strong></span></div></div>
-                <div class="stat-box" style="background: #064e3b; border-color: #047857;"><div class="stat-box-title" style="color: #6ee7b7;">📈 MARGEN ESTIMADO</div><div class="stat-box-values" style="color: #6ee7b7;"><span>Total: <strong id="stat-autobros-margen-tot">0.00 €</strong></span></div></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- FORMULARIO DE INGRESO (SOLO ADMIN) -->
     <div id="p-form-container" class="p-form">
         <select id="f-taller" onchange="actualizarColorSelectTaller()">
             <option value="APV Cars" style="background-color: #00d2ff !important; color: #002233 !important; font-weight: 900;">APV CARS</option>
@@ -324,7 +278,6 @@
         <button onclick="agregarVehiculo()">+ INGRESAR COCHE</button>
     </div>
 
-    <!-- TABLERO KANBAN DE 5 COLUMNAS DE MISMO TONO QUE EL FONDO (#3b424a) -->
     <div class="tablero-grid">
         <div id="col-1" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 1)"></div>
         <div id="col-2" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 2)"></div>
@@ -333,7 +286,6 @@
         <div id="col-5" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 5)"></div>
     </div>
 
-    <!-- MODAL CHECKLIST -->
     <div id="modal-checklist" class="modal-overlay">
         <div class="modal-content">
             <h3 id="modal-titulo" style="font-size: 14px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">LISTA DE CONTROL - VEHÍCULO</h3>
@@ -374,26 +326,6 @@
                     <label><input type="checkbox" value="PUERTA DELANTERA DERECHA" class="chk-pieza chk-der solo-admin"> PUERTA DELANTERA DER.</label>
                     <label><input type="checkbox" value="PUERTA TRASERA DERECHA" class="chk-pieza chk-der solo-admin"> PUERTA TRASERA DER.</label>
                     <label><input type="checkbox" value="ALETA TRASERA DERECHA" class="chk-pieza chk-der solo-admin"> ALETA TRASERA DER.</label>
-                </div>
-            </div>
-
-            <div id="seccion-facturacion" class="seccion-facturacion">
-                <h4 style="font-size: 10px; color: #38bdf8; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">💶 GESTIÓN DE COSTES Y VENTA (SOLO ADMIN)</h4>
-                <div class="grid-facturacion">
-                    <div class="campo-factura">
-                        <label>PVP COSTE</label>
-                        <div class="input-moneda-container">
-                            <input type="number" step="0.01" id="m-pvp-coste" value="0.00" class="solo-admin">
-                            <span>€</span>
-                        </div>
-                    </div>
-                    <div class="campo-factura">
-                        <label>PVP VENTA</label>
-                        <div class="input-moneda-container">
-                            <input type="number" step="0.01" id="m-pvp-venta" value="0.00" class="solo-admin">
-                            <span>€</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -441,9 +373,9 @@
         };
 
         const DEMO_COCHESH = [
-            { idDoc: "demo-1", id: 1, Taller: "APV Cars", matricula: "1234-ABC", modelo: "AUDI A4", notas: "CARGO CLIENTE", urgente: true, fechaEntradaIngreso: "2026-11-01", fechaEntrega: "2026-11-10", columna: 1, piezas: ["CAPÓ", "TECHO"], textoLibre: "GOLPE DELANTERO", fotos: [], pvpCoste: 150.00, pvpVenta: 350.00 },
-            { idDoc: "demo-2", id: 2, Taller: "Auto Bros", matricula: "5678-DEF", modelo: "SEAT LEON", notas: "CARGO COMPAÑIA SIN FRANQ", urgente: false, fechaEntradaIngreso: "2026-11-02", fechaEntrega: "2026-11-08", columna: 2, piezas: ["PARAGOLPES TRASERO"], textoLibre: "PINTAR PARAGOLPES", fotos: [], pvpCoste: 90.00, pvpVenta: 210.00 },
-            { idDoc: "demo-3", id: 3, Taller: "APV Cars", matricula: "9012-GHI", modelo: "BMW SERIE 3", notas: "CARGO COMPAÑIA CON FRANQ", urgente: false, fechaEntradaIngreso: "2026-10-28", fechaEntrega: "2026-11-05", columna: 3, fechaEntradaTaller: Date.now() - (3600000 * 48), piezas: ["PUERTA DELANTERA IZQUIERDA"], textoLibre: "REPARACIÓN EN PROCESO", fotos: [], pvpCoste: 200.00, pvpVenta: 450.00 }
+            { idDoc: "demo-1", id: 1, Taller: "APV Cars", matricula: "1234-ABC", modelo: "AUDI A4", notas: "CARGO CLIENTE", urgente: true, fechaEntradaIngreso: "2026-11-01", fechaEntrega: "2026-11-10", columna: 1, piezas: ["CAPÓ", "TECHO"], textoLibre: "GOLPE DELANTERO", fotos: [] },
+            { idDoc: "demo-2", id: 2, Taller: "Auto Bros", matricula: "5678-DEF", modelo: "SEAT LEON", notas: "CARGO COMPAÑIA SIN FRANQ", urgente: false, fechaEntradaIngreso: "2026-11-02", fechaEntrega: "2026-11-08", columna: 2, piezas: ["PARAGOLPES TRASERO"], textoLibre: "PINTAR PARAGOLPES", fotos: [] },
+            { idDoc: "demo-3", id: 3, Taller: "APV Cars", matricula: "9012-GHI", modelo: "BMW SERIE 3", notas: "CARGO COMPAÑIA CON FRANQ", urgente: false, fechaEntradaIngreso: "2026-10-28", fechaEntrega: "2026-11-05", columna: 3, fechaEntradaTaller: Date.now() - (3600000 * 48), piezas: ["PUERTA DELANTERA IZQUIERDA"], textoLibre: "REPARACIÓN EN PROCESO", fotos: [] }
         ];
 
         let db = null;
@@ -504,7 +436,6 @@
             location.reload();
         }
 
-        
         function actualizarColorSelectTaller() {
             const selectElem = document.getElementById('f-taller');
             if (!selectElem) return;
@@ -522,17 +453,15 @@
             const esAdmin = (usuarioActual === 'ADMIN');
             const selectorFiltro = document.getElementById('filtro-taller');
             const formCrear = document.getElementById('p-form-container');
-            const btnStats = document.getElementById('btn-stats-toggle');
 
             if (!esAdmin) {
                 selectorFiltro.value = usuarioActual;
                 selectorFiltro.disabled = true;
                 formCrear.style.display = 'none';
-                btnStats.style.display = 'none';
             } else {
                 selectorFiltro.disabled = false;
-                formCrear.style.display = 'flex'; actualizarColorSelectTaller();
-                btnStats.style.display = 'flex';
+                formCrear.style.display = 'flex'; 
+                actualizarColorSelectTaller();
             }
         }
 
@@ -565,30 +494,7 @@
             });
         }
 
-        function toggleEstadisticas() {
-            const contenedor = document.getElementById('stats-container');
-            const textoBoton = document.getElementById('txt-btn-stats');
-            if (contenedor.style.display === 'flex') {
-                contenedor.style.display = 'none';
-                textoBoton.innerText = "VER ESTADÍSTICAS";
-            } else {
-                contenedor.style.display = 'flex';
-                textoBoton.innerText = "OCULTAR ESTADÍSTICAS";
-            }
-        }
-
         function chequearEnter(e) { if (e.key === 'Enter') agregarVehiculo(); }
-
-        function calcularTiempoReparacion(fechaEntrada, fechaEntrega) {
-            if (!fechaEntrada) return 'NO INICIADO';
-            const fin = fechaEntrega ? fechaEntrega : Date.now();
-            const diffMs = fin - fechaEntrada;
-            if (diffMs < 0) return '0 DÍAS';
-            
-            const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-            const horas = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            return `${dias}d ${horas}h`;
-        }
 
         function cambiarFechaEntrega(idDoc, event, inputElem) {
             event.stopPropagation();
@@ -610,44 +516,6 @@
                 db.collection("vehiculos").doc(idDoc).update({ fechaEntradaIngreso: nuevaFecha });
             }
             dibujar();
-        }
-
-        function calcularEstadisticas() {
-            if (usuarioActual !== 'ADMIN') return;
-
-            let apvReparados = coches.filter(c => c.Taller === "APV Cars" && c.columna >= 4);
-            let autobrosReparados = coches.filter(c => c.Taller === "Auto Bros" && c.columna >= 4);
-
-            document.getElementById('stat-apv-count').innerText = apvReparados.length;
-            document.getElementById('stat-autobros-count').innerText = autobrosReparados.length;
-
-            function procesarMetricasTaller(lista, prefijo) {
-                let costeTot = 0, ventaTot = 0;
-                lista.forEach(c => {
-                    costeTot += (c.pvpCoste || 0);
-                    ventaTot += (c.pvpVenta || 0);
-                });
-                let margen = ventaTot - costeTot;
-
-                document.getElementById(`${prefijo}-coste-tot`).innerText = costeTot.toFixed(2) + " €";
-                document.getElementById(`${prefijo}-venta-tot`).innerText = ventaTot.toFixed(2) + " €";
-                document.getElementById(`${prefijo}-margen-tot`).innerText = margen.toFixed(2) + " €";
-            }
-
-            procesarMetricasTaller(apvReparados, 'stat-apv');
-            procesarMetricasTaller(autobrosReparados, 'stat-autobros');
-
-            function tiempoMedioReparacion(lista) {
-                let listaValidos = lista.filter(c => c.fechaEntradaTaller && c.fechaEntregaTaller);
-                if (listaValidos.length === 0) return "0 DÍAS";
-                let totalMs = 0;
-                listaValidos.forEach(c => totalMs += (c.fechaEntregaTaller - c.fechaEntradaTaller));
-                let diasMedios = Math.round(totalMs / (listaValidos.length * 1000 * 60 * 60 * 24));
-                return diasMedios + " DÍAS";
-            }
-
-            document.getElementById('stat-apv-time').innerText = tiempoMedioReparacion(apvReparados);
-            document.getElementById('stat-autobros-time').innerText = tiempoMedioReparacion(autobrosReparados);
         }
 
         /* --- DRAG AND DROP NATIVO --- */
@@ -710,12 +578,6 @@
                     const urg = c.urgente ? `<div style="margin-top: 3px;"><span class="badge-urgente">🚨 URGENTE ✓</span></div>` : '';
                     const pza = c.piezas && c.piezas.length > 0 ? `<span class="badge-piezas">🛠️ ${c.piezas.length} PZA</span>` : '';
                     const fts = c.fotos && c.fotos.length > 0 ? `<span class="badge-fotos">📷 ${c.fotos.length} FOTO(S)</span>` : '';
-                    
-                    const costesInfo = (esAdmin && (c.pvpCoste > 0 || c.pvpVenta > 0)) ? 
-                        `<div class="badge-factura">💶 C: ${(c.pvpCoste||0).toFixed(2)}€ | V: ${(c.pvpVenta||0).toFixed(2)}€</div>` : '';
-
-                    const tiempoCalc = (c.fechaEntradaTaller) ? 
-                        `<div class="badge-reparador">⏱️ REPARANDO: ${calcularTiempoReparacion(c.fechaEntradaTaller, c.fechaEntregaTaller)}</div>` : '';
 
                     let botonesAccion = '';
                     if (esAdmin) {
@@ -735,28 +597,26 @@
                              ondragstart="alComenzarArrastre(event, '${c.idDoc}')" 
                              ondragend="alTerminarArrastre(event)"
                              onclick="abrirChecklist('${c.idDoc}', event)">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
                                 <span class="badge-taller">${c.Taller.toUpperCase()}</span>
-                                <strong style="font-size:12px; color:#38bdf8;">${c.matricula.toUpperCase()}</strong>
+                                <div style="text-align: right; font-family: Arial, sans-serif;">
+                                    <div style="font-size: 14px; font-weight: 900; color: #ffffff; font-family: Arial, sans-serif; letter-spacing: 1px; margin-bottom: 2px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">${c.matricula.toUpperCase()}</div>
+                                    <div style="font-size: 12px; font-weight: 600; color: #cbd5e1; letter-spacing: 0.5px;">${c.modelo.toUpperCase()}</div>
+                                </div>
                             </div>
-                            <div style="font-weight: 800; color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); margin-top:2px;">${c.modelo.toUpperCase()}</div>
                             ${c.notas ? `<div style="font-weight: bold; color: #cbd5e1; margin-top: 2px; font-size: 9px;">📌 ${c.notas.toUpperCase()}</div>` : ''}
                             ${urg}
                             
-                            <!-- SECCIÓN DE FECHAS CLICABLES PARA ABRIR -->
                             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;" onclick="event.stopPropagation()">
                                 <div class="badge-fecha-editable">
                                     <span>ENTRADA:</span>
-                                    <input type="date" id="input-ent-${c.idDoc}" value="${c.fechaEntradaIngreso || ''}" onchange="cambiarFechaEntrada('${c.idDoc}', event, this)" ${!esAdmin ? 'disabled' : ''}>
+                                    <input type="date" value="${c.fechaEntradaIngreso || ''}" onchange="cambiarFechaEntrada('${c.idDoc}', event, this)" ${!esAdmin ? 'disabled' : ''}>
                                 </div>
                                 <div class="badge-fecha-editable">
                                     <span>ENTREGA:</span>
-                                    <input type="date" id="input-entreg-${c.idDoc}" value="${c.fechaEntrega || ''}" onchange="cambiarFechaEntrada('${c.idDoc}', event, this)" ${!esAdmin ? 'disabled' : ''}>
+                                    <input type="date" value="${c.fechaEntrega || ''}" onchange="cambiarFechaEntrega('${c.idDoc}', event, this)" ${!esAdmin ? 'disabled' : ''}>
                                 </div>
                             </div>
-                            
-                            ${tiempoCalc}
-                            ${costesInfo}
 
                             ${c.textoLibre ? `<div style="font-style: italic; color: #a0aec0; margin-top: 3px; font-size: 9px;">💬 ${c.textoLibre.toUpperCase()}</div>` : ''}
                             <div style="margin-top: 5px; display:flex; gap:4px;">${pza} ${fts}</div>
@@ -765,7 +625,6 @@
                 });
                 columnaDiv.innerHTML = colHtml;
             });
-            calcularEstadisticas();
         }
 
         function abrirChecklist(idDoc, event) {
@@ -774,7 +633,6 @@
             if(!c) return;
 
             const esAdmin = (usuarioActual === 'ADMIN');
-
             const modalContent = document.querySelector('.modal-content');
             modalContent.classList.remove('m-apv', 'm-autobros');
             const tituloElem = document.getElementById('modal-titulo');
@@ -795,16 +653,11 @@
                 chk.checked = c.piezas && c.piezas.includes(chk.value);
             });
 
-            document.getElementById('m-pvp-coste').value = (c.pvpCoste || 0).toFixed(2);
-            document.getElementById('m-pvp-venta').value = (c.pvpVenta || 0).toFixed(2);
-
             document.getElementById('modal-texto-libre').value = (c.textoLibre || '').toUpperCase();
             fotosTemporales = c.fotos ? [...c.fotos] : [];
             actualizarGaleriaPreview();
 
             document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdmin);
-            document.getElementById('seccion-facturacion').style.display = esAdmin ? 'block' : 'none';
-
             document.getElementById('modal-checklist').style.display = 'flex';
         }
 
@@ -896,8 +749,6 @@
                 document.querySelectorAll('.chk-pieza:checked').forEach(chk => seleccionadas.push(chk.value));
                 datosActualizar.piezas = seleccionadas;
                 datosActualizar.urgente = document.getElementById('modal-urgente').checked;
-                datosActualizar.pvpCoste = parseFloat(document.getElementById('m-pvp-coste').value) || 0;
-                datosActualizar.pvpVenta = parseFloat(document.getElementById('m-pvp-venta').value) || 0;
             }
 
             Object.assign(c, datosActualizar);
@@ -913,10 +764,12 @@
             if (!c) return;
 
             let cambios = { columna: nCol };
-            if (nCol === 3) {
+            if (nCol >= 3 && !c.fechaEntradaTaller) {
+                cambios.fechaEntradaTaller = Date.now();
+            }
+            if (nCol === 3 && !c.fechaEntradaIngreso) {
                 const hoyStr = new Date().toISOString().split('T')[0];
                 cambios.fechaEntradaIngreso = hoyStr;
-                cambios.fechaEntradaTaller = Date.now();
             }
             if (nCol >= 4 && !c.fechaEntregaTaller) {
                 cambios.fechaEntregaTaller = Date.now();
@@ -966,9 +819,7 @@
                 columna: 1,
                 piezas: [],
                 textoLibre: "",
-                fotos: [],
-                pvpCoste: 0, 
-                pvpVenta: 0
+                fotos: []
             };
 
             if (db) {
