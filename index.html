@@ -7,12 +7,21 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
-        body { 
+        html, body {
+            height: 100vh;
+            overflow: hidden;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
             background-color: #A3A3A3; 
             padding: 12px; 
             color: #ffffff; 
             -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 100%;
         }
         
         /* Pantalla de Login */
@@ -25,28 +34,42 @@
         .login-card button:hover { background: #0369a1; }
         .error-msg { color: #f87171; font-size: 12px; margin-bottom: 10px; font-weight: 600; display: none; }
 
+        .fixed-top-container {
+            flex-shrink: 0;
+            background-color: #A3A3A3;
+            z-index: 900;
+        }
+
         header { 
             background: #1f2327; 
             padding: 10px 16px; 
             border-radius: 6px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3); 
-            margin-bottom: 12px; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4); 
+            margin-bottom: 8px; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
             flex-wrap: wrap; 
             gap: 10px; 
             border: 1px solid #2d333b;
-            position: sticky;
-            top: 0;
-            z-index: 100;
         }
         h1 { font-size: 16px; color: #f8fafc; font-weight: 600; }
         
         .user-badge { background: #0284c7; color: #ffffff; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .btn-logout { background: #dc2626; color: white; border: none; padding: 3px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
 
-        .p-form { background: #272d34; padding: 10px; border-radius: 6px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border: 1px solid #3b424a; }
+        .p-form { 
+            background: #272d34; 
+            padding: 10px; 
+            border-radius: 6px; 
+            margin-bottom: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4); 
+            display: flex; 
+            gap: 8px; 
+            flex-wrap: wrap; 
+            align-items: center; 
+            border: 1px solid #3b424a; 
+        }
         
         input, select, textarea { 
             font-family: inherit;
@@ -69,19 +92,90 @@
             min-width: 130px !important;
         }
 
-        #f-mat { max-width: 200px !important; min-width: 110px !important; }
+        #f-mat { max-width: 180px !important; min-width: 110px !important; }
         #f-mod { max-width: 200px !important; min-width: 120px !important; }
+        .input-num { width: 75px !important; text-align: right; }
         
         .toolbar { display: flex; gap: 8px; align-items: center; }
         button { font-family: inherit; background: #0284c7; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; }
         button:hover { background: #0369a1; }
-        
+
+        .btn-toggle-stats {
+            background: #0284c7;
+            color: white;
+            border: 1px solid #38bdf8;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-toggle-stats:hover { background: #0369a1; }
+
+        .admin-stats-panel {
+            background: #1e242b;
+            border: 1px solid #38bdf8;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 10px;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+            display: none;
+        }
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .stats-header h2 { font-size: 15px; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .stat-card {
+            background: #272d34;
+            border-radius: 6px;
+            padding: 10px;
+            border: 1px solid #3b424a;
+            text-align: center;
+        }
+        .stat-card .title { font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+        .stat-card .value { font-size: 16px; font-weight: 700; color: #38bdf8; }
+        .stat-card .subtext { font-size: 9px; color: #cbd5e1; margin-top: 2px; }
+
+        .charts-wrapper {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 900px) { .charts-wrapper { grid-template-columns: 1fr; } }
+        .chart-box {
+            background: #272d34;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #3b424a;
+        }
+        .chart-box h4 { font-size: 11px; text-transform: uppercase; color: #cbd5e1; margin-bottom: 10px; text-align: center; }
+
+        /* TABLERO KANBAN */
         .tablero-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
             gap: 10px;
             width: 100%;
+            flex-grow: 1;
+            overflow-y: auto;
             align-items: start;
+            padding-bottom: 20px;
         }
 
         @media (max-width: 1200px) { .tablero-grid { grid-template-columns: repeat(3, 1fr); } }
@@ -91,8 +185,8 @@
             background: #A3A3A3; 
             border: none; 
             border-radius: 6px; 
-            padding: 8px; 
-            min-height: 600px; 
+            padding: 4px; 
+            min-height: 100%; 
             box-shadow: none;
         }
         .columna-div.drag-over {
@@ -104,7 +198,7 @@
             font-size: 11px; 
             font-weight: 700; 
             color: #ffffff; 
-            padding: 8px 10px; 
+            padding: 10px; 
             border-radius: 4px; 
             margin-bottom: 10px; 
             display: flex; 
@@ -112,7 +206,10 @@
             align-items: center; 
             text-transform: uppercase; 
             letter-spacing: 0.5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .col-titulo-1 { background-color: #d97706; }
@@ -121,25 +218,26 @@
         .col-titulo-4 { background-color: #15803d; }
         .col-titulo-5 { background-color: #525966; }
         
+        /* TARJETAS CON FONDO Y ETIQUETAS MÁS CLARAS Y VISIBLES */
         .tarjeta { 
-            background-color: #2b3036 !important; 
+            background-color: #3d454f !important; 
             border-radius: 6px; 
             padding: 10px; 
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4); 
             margin-bottom: 10px; 
             font-size: 12px; 
             border-left: 6px solid #64748b; 
             cursor: pointer; 
             transition: transform 0.1s, background-color 0.1s, opacity 0.2s; 
             text-transform: uppercase; 
-            color: #e2e8f0; 
-            border-top: 1px solid #3b424a;
-            border-right: 1px solid #3b424a;
-            border-bottom: 1px solid #3b424a;
+            color: #ffffff; 
+            border-top: 1px solid #555f6d;
+            border-right: 1px solid #555f6d;
+            border-bottom: 1px solid #555f6d;
         }
         .tarjeta:active { cursor: grabbing; }
         .tarjeta.dragging { opacity: 0.3; }
-        .tarjeta:hover { transform: translateY(-2px); background: #20252b !important; }
+        .tarjeta:hover { transform: translateY(-2px); background: #47505c !important; }
         
         .tarjeta.t-apv { border-left-color: #00d2ff !important; } 
         .tarjeta.t-apv .badge-taller { 
@@ -160,23 +258,27 @@
         }
 
         .badge-taller { padding: 3px 8px; border-radius: 4px; font-size: 10px; display: inline-block; }
-        .badge-urgente { background-color: #991b1b; color: #fef2f2; padding: 2px 6px; border-radius: 3px; font-weight: 600; font-size: 9px; border: 1px solid #dc2626; display: inline-block; }
+        .badge-urgente { background-color: #b91c1c; color: #ffffff; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 9px; border: 1px solid #ef4444; display: inline-block; }
+        .badge-pagador { padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 9px; display: inline-block; }
+        .badge-compania { background-color: #2563eb; color: #ffffff; border: 1px solid #60a5fa; }
+        .badge-cliente { background-color: #ca8a04; color: #ffffff; border: 1px solid #facc15; }
 
-        .actions { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 5px; border-top: 1px solid #383838; align-items: center; }
-        .btn-b { color: #f87171; background: none; border: none; cursor: pointer; font-size: 10px; font-weight: 600; }
-        .btn-m { background: #272d34; color: #fff; border: 1px solid #3b424a; padding: 1px 5px; font-weight: 600; cursor: pointer; border-radius: 3px; font-size: 10px; }
-        .btn-m:hover { background: #3b424a; }
+        .actions { display: flex; justify-content: space-between; margin-top: 6px; padding-top: 5px; border-top: 1px solid #555f6d; align-items: center; }
+        .btn-b { color: #fca5a5; background: none; border: none; cursor: pointer; font-size: 10px; font-weight: 700; }
+        .btn-m { background: #333940; color: #ffffff; border: 1px solid #555f6d; padding: 2px 6px; font-weight: 700; cursor: pointer; border-radius: 3px; font-size: 10px; }
+        .btn-m:hover { background: #4a535f; }
 
-        .badge-piezas { background: #1a1d21; color: #f1f5f9; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #4a525d; font-weight: 600; }
-        .badge-fotos { background: #9a3412; color: #ffedd5; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #ea580c; font-weight: 600; }
+        .badge-piezas { background: #262c33; color: #ffffff; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #64748b; font-weight: 700; }
+        .badge-fotos { background: #c2410c; color: #ffffff; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #fb923c; font-weight: 700; }
+        .badge-docs { background: #1d4ed8; color: #ffffff; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #93c5fd; font-weight: 700; }
         
         .badge-fecha-editable { 
             background: transparent !important; 
-            color: #cbd5e1; 
+            color: #e2e8f0; 
             padding: 0; 
             border-radius: 0; 
             font-size: 9px; 
-            font-weight: 600; 
+            font-weight: 700; 
             border: none !important; 
             margin-top: 4px; 
             display: inline-flex; 
@@ -184,31 +286,70 @@
             gap: 4px;
         }
         .badge-fecha-editable input[type="date"] {
-            background-color: #1a1d21 !important;
+            background-color: #262c33 !important;
             color: #ffffff !important;
-            border: 1px solid #3b424a !important;
+            border: 1px solid #555f6d !important;
             border-radius: 3px;
             font-size: 10px;
             padding: 2px 4px;
             font-family: inherit;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
             outline: none !important;
         }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #272d34; padding: 18px; border-radius: 8px; width: 90%; max-width: 800px; box-shadow: 0 10px 25px rgba(0,0,0,0.7); max-height: 90vh; overflow-y: auto; color: #e2e8f0; border: 2px solid #3b424a; }
+        .modal-content { background: #272d34; padding: 18px; border-radius: 8px; width: 90%; max-width: 850px; box-shadow: 0 10px 25px rgba(0,0,0,0.7); max-height: 90vh; overflow-y: auto; color: #e2e8f0; border: 2px solid #3b424a; }
         .modal-content.m-apv { border: 2px solid #00d2ff !important; box-shadow: 0 0 20px rgba(0, 210, 255, 0.35) !important; }
         .modal-content.m-autobros { border: 2px solid #10b981 !important; box-shadow: 0 0 20px rgba(16, 185, 129, 0.35) !important; }
+        
         .grid-checklist { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 12px 0; }
         .col-check-box { background: #15181b; padding: 8px; border: 1px solid #353c45; border-radius: 4px; }
         .col-check-box h4 { font-size: 10px; color: #38bdf8; margin-bottom: 6px; border-bottom: 1px solid #353c45; padding-bottom: 3px; text-align: center; text-transform: uppercase; font-weight: 700; }
         .col-check-box label { display: block; font-size: 10px; margin-bottom: 5px; cursor: pointer; color: #cbd5e1; }
         .col-check-box input[type="checkbox"] { margin-right: 5px; accent-color: #0284c7; }
 
+        .seccion-pagador-box {
+            flex: 1;
+            min-width: 250px;
+            background: #15181b;
+            border: 1px solid #353c45;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .seccion-pagador-box.box-comp { border-top: 3px solid #3b82f6; }
+        .seccion-pagador-box.box-cli { border-top: 3px solid #eab308; }
+
         .drop-zone { background: #15181b; border: 2px dashed #3b424a; padding: 12px; border-radius: 4px; text-align: center; transition: all 0.2s ease; }
         .drop-zone.dragover { background: #1a1d21; border-color: #38bdf8; }
-        .galeria-fotos { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; justify-content: center; }
+        
+        .galeria-adjuntos { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; justify-content: center; }
+        .adjunto-item {
+            position: relative;
+            background: #272d34;
+            border: 1px solid #3b424a;
+            border-radius: 4px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            max-width: 140px;
+        }
+        .adjunto-item .btn-del {
+            background: rgba(220, 38, 38, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 15px;
+            height: 15px;
+            font-size: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
         .miniatura-container { position: relative; width: 55px; height: 55px; border-radius: 4px; overflow: hidden; border: 1px solid #3b424a; }
         .miniatura-container img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
         .btn-eliminar-foto { position: absolute; top: 2px; right: 2px; background: rgba(220, 38, 38, 0.9); color: white; border: none; border-radius: 50%; width: 15px; height: 15px; font-size: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -223,6 +364,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -241,55 +383,142 @@
         </div>
     </div>
 
-    <header>
-        <h1>⚙️ Control de Taller (APV Cars & Auto Bros)</h1>
-        <div style="display:flex; align-items:center; gap: 10px; flex-wrap: wrap;">
-            <div id="user-display" class="user-badge">
-                <span id="user-role-text">ADMIN</span>
-                <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+    <div class="app-container">
+        
+        <div class="fixed-top-container">
+            <header>
+                <h1>⚙️ Control de Taller (APV Cars & Auto Bros)</h1>
+                <div style="display:flex; align-items:center; gap: 10px; flex-wrap: wrap;">
+                    <div id="user-display" class="user-badge">
+                        <span id="user-role-text">ADMIN</span>
+                        <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+                    </div>
+                    
+                    <button id="btn-toggle-stats-btn" class="btn-toggle-stats" onclick="toggleEstadisticasPanel()" style="display:none;">
+                        📊 <span id="lbl-toggle-stats">MOSTRAR ESTADÍSTICAS</span>
+                    </button>
+
+                    <div class="toolbar">
+                        <input type="text" id="buscador" placeholder="🔍 BUSCAR MATRÍCULA..." onkeyup="dibujar()" style="width: 180px;">
+                        <select id="filtro-taller" onchange="dibujar()">
+                            <option value="TODOS">TODOS LOS TALLERES</option>
+                            <option value="APV Cars">APV CARS</option>
+                            <option value="Auto Bros">AUTO BROS</option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+
+            <!-- PANEL DE ESTADÍSTICAS FINANCIERAS -->
+            <div id="admin-stats-container" class="admin-stats-panel">
+                <div class="stats-header">
+                    <h2>📊 Panel de Estadísticas Financieras (Solo Columna 5 - Archivados)</h2>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <select id="stats-filtro-pagador" onchange="actualizarEstadisticasAdmin()" style="font-size:11px; padding:4px 8px;">
+                            <option value="TODOS">TODOS LOS PAGADORES</option>
+                            <option value="COMPANIA">SOLO COMPAÑÍA</option>
+                            <option value="CLIENTE">SOLO CLIENTE</option>
+                        </select>
+                        <select id="stats-filtro-taller" onchange="actualizarEstadisticasAdmin()" style="font-size:11px; padding:4px 8px;">
+                            <option value="TODOS">TODOS LOS TALLERES</option>
+                            <option value="APV Cars">APV CARS</option>
+                            <option value="Auto Bros">AUTO BROS</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="title">🚗 Total Vehículos</div>
+                        <div id="st-total-coches" class="value">0</div>
+                        <div class="subtext">Solo columna 5 (archivados)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="title">💶 Ventas ZSUB</div>
+                        <div id="st-total-venta" class="value" style="color:#10b981;">0 €</div>
+                        <div class="subtext">Venta pura de servicios</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="title">📉 Costes ZSUB</div>
+                        <div id="st-total-coste" class="value" style="color:#f87171;">0 €</div>
+                        <div class="subtext">Costes ZSUB</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="title">🔩 Venta Recambios</div>
+                        <div id="st-total-recambios" class="value" style="color:#fbbf24;">0 €</div>
+                        <div class="subtext">Ingresos repuestos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="title">📈 Beneficio Neto</div>
+                        <div id="st-beneficio" class="value" style="color:#38bdf8;">0 €</div>
+                        <div class="subtext">Venta - Costes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="title">% Margen ZSUB</div>
+                        <div id="st-porc-beneficio" class="value" style="color:#34d399;">0 %</div>
+                        <div class="subtext">Rentabilidad sobre venta</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="title">€ Margen Recambio</div>
+                        <div id="st-margen-recambio" class="value" style="color:#f43f5e;">0 €</div>
+                        <div class="subtext">Importe neto en euros</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="title">💳 Pagador</div>
+                        <div id="st-pagador-ratio" class="value" style="font-size: 12px; color:#e2e8f0; margin-top: 4px;">0 COMP | 0 CLI</div>
+                        <div class="subtext">Compañía vs Cliente</div>
+                    </div>
+                </div>
+
+                <div class="charts-wrapper">
+                    <div class="chart-box">
+                        <h4 id="chart-title-1">Comparativa de Importes por Taller (€)</h4>
+                        <div style="height: 220px; position: relative;">
+                            <canvas id="chart-importes-taller"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-box">
+                        <h4>Distribución de Ventas por Tipo de Pagador</h4>
+                        <div style="height: 220px; position: relative;">
+                            <canvas id="chart-pagador"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="toolbar">
-                <input type="text" id="buscador" placeholder="🔍 BUSCAR MATRÍCULA..." onkeyup="dibujar()" style="width: 230px;">
-                <select id="filtro-taller" onchange="dibujar()">
-                    <option value="TODOS">TODOS LOS TALLERES</option>
-                    <option value="APV Cars">APV CARS</option>
-                    <option value="Auto Bros">AUTO BROS</option>
+
+            <!-- FORMULARIO DE INGRESO -->
+            <div id="p-form-container" class="p-form">
+                <select id="f-taller" onchange="actualizarColorSelectTaller()">
+                    <option value="APV Cars" style="background-color: #00d2ff !important; color: #002233 !important; font-weight: 700;">APV CARS</option>
+                    <option value="Auto Bros" style="background-color: #10b981 !important; color: #022c22 !important; font-weight: 700;">AUTO BROS</option>
                 </select>
+                <input type="text" id="f-mat" placeholder="MATRÍCULA (EJ: 1234-ABC)" onkeypress="chequearEnter(event)">
+                <input type="text" id="f-mod" placeholder="MARCA / MODELO" onkeypress="chequearEnter(event)">
+                
+                <div style="display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: #cbd5e1;">
+                    📅 <span style="font-size: 11px; font-weight: 700;">ENTREGA:</span> 
+                    <input type="date" id="f-fecha" style="padding: 6px 8px; font-size: 11px; font-weight: 600; width: 130px;">
+                </div>
+                <button onclick="agregarVehiculo()">+ INGRESAR COCHE</button>
             </div>
         </div>
-    </header>
 
-    <div id="p-form-container" class="p-form">
-        <select id="f-taller" onchange="actualizarColorSelectTaller()">
-            <option value="APV Cars" style="background-color: #00d2ff !important; color: #002233 !important; font-weight: 700;">APV CARS</option>
-            <option value="Auto Bros" style="background-color: #10b981 !important; color: #022c22 !important; font-weight: 700;">AUTO BROS</option>
-        </select>
-        <input type="text" id="f-mat" placeholder="MATRÍCULA (EJ: 1234-ABC)" onkeypress="chequearEnter(event)">
-        <input type="text" id="f-mod" placeholder="MARCA / MODELO" onkeypress="chequearEnter(event)">
-        <select id="f-notas">
-            <option value="">-- SIN CARGO ASIGNADO --</option>
-            <option value="CARGO CLIENTE">CARGO CLIENTE</option>
-            <option value="CARGO COMPAÑIA SIN FRANQ">CARGO COMPAÑIA SIN FRANQ</option>
-            <option value="CARGO COMPAÑIA CON FRANQ">CARGO COMPAÑIA CON FRANQ</option>
-        </select>
-        <div style="display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: #cbd5e1;">
-            📅 <span style="font-size: 12px; font-weight: 700;">ENTREGA:</span> <input type="date" id="f-fecha" style="padding: 6px 8px; font-size: 12px; font-weight: 600; min-width: 150px;">
+        <!-- TABLERO KANBAN -->
+        <div class="tablero-grid">
+            <div id="col-1" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 1)"></div>
+            <div id="col-2" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 2)"></div>
+            <div id="col-3" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 3)"></div>
+            <div id="col-4" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 4)"></div>
+            <div id="col-5" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 5)"></div>
         </div>
-        <button onclick="agregarVehiculo()">+ INGRESAR COCHE</button>
+
     </div>
 
-    <div class="tablero-grid">
-        <div id="col-1" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 1)"></div>
-        <div id="col-2" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 2)"></div>
-        <div id="col-3" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 3)"></div>
-        <div id="col-4" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 4)"></div>
-        <div id="col-5" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 5)"></div>
-    </div>
-
+    <!-- MODAL DETALLES & CHECKLIST -->
     <div id="modal-checklist" class="modal-overlay">
         <div class="modal-content">
             <h3 id="modal-titulo" style="font-size: 14px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">LISTA DE CONTROL - VEHÍCULO</h3>
-            <p style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Selecciona piezas afectadas, marca urgencia y adjunta imágenes:</p>
+            <p style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Selecciona piezas afectadas, marca urgencia, importes por pagador y adjunta imágenes/documentos:</p>
             
             <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
                 <div style="flex: 1; background: #451a1a; border: 1px solid #7f1d1d; padding: 8px; border-radius: 4px;">
@@ -301,6 +530,53 @@
                     <label style="color: #6ee7b7; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                         <input type="checkbox" id="modal-vehiculo-completo" onchange="toggleVehiculoCompleto(this)" style="width: 14px; height: 14px; accent-color: #16a34a; cursor: pointer;" class="solo-admin"> 🚗 VEHÍCULO COMPLETO (TODAS)
                     </label>
+                </div>
+            </div>
+
+            <!-- SECCIÓN FINANCIERA EN MODAL -->
+            <div id="modal-seccion-admin" style="background: #181d22; border: 1px solid #0284c7; border-radius: 6px; padding: 12px; margin-bottom: 12px; display: none;">
+                <h4 style="font-size: 11px; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px;">💰 Gestión Económica por Pagador (Solo Admin)</h4>
+                
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <div class="seccion-pagador-box box-comp">
+                        <label style="font-size: 11px; font-weight: 700; color: #60a5fa; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                            <input type="checkbox" id="modal-chk-compania" style="accent-color: #3b82f6; width: 15px; height: 15px;" class="solo-admin"> 🏢 CARGO COMPAÑÍA
+                        </label>
+                        <div style="display: flex; gap: 6px;">
+                            <div>
+                                <label style="font-size: 9px; color:#cbd5e1; display:block;">VENTA (€):</label>
+                                <input type="number" id="modal-comp-venta" class="input-num solo-admin" step="0.01">
+                            </div>
+                            <div>
+                                <label style="font-size: 9px; color:#cbd5e1; display:block;">COSTE (€):</label>
+                                <input type="number" id="modal-comp-coste" class="input-num solo-admin" step="0.01">
+                            </div>
+                            <div>
+                                <label style="font-size: 9px; color:#cbd5e1; display:block;">RECAMB (€):</label>
+                                <input type="number" id="modal-comp-recambios" class="input-num solo-admin" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="seccion-pagador-box box-cli">
+                        <label style="font-size: 11px; font-weight: 700; color: #fde047; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                            <input type="checkbox" id="modal-chk-cliente" style="accent-color: #eab308; width: 15px; height: 15px;" class="solo-admin"> 👤 CARGO CLIENTE
+                        </label>
+                        <div style="display: flex; gap: 6px;">
+                            <div>
+                                <label style="font-size: 9px; color:#cbd5e1; display:block;">VENTA (€):</label>
+                                <input type="number" id="modal-cli-venta" class="input-num solo-admin" step="0.01">
+                            </div>
+                            <div>
+                                <label style="font-size: 9px; color:#cbd5e1; display:block;">COSTE (€):</label>
+                                <input type="number" id="modal-cli-coste" class="input-num solo-admin" step="0.01">
+                            </div>
+                            <div>
+                                <label style="font-size: 9px; color:#cbd5e1; display:block;">RECAMB (€):</label>
+                                <input type="number" id="modal-cli-recambios" class="input-num solo-admin" step="0.01">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -335,11 +611,11 @@
             </div>
 
             <div style="margin-top: 10px;">
-                <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">📷 FOTOGRAFÍAS DE LOS DAÑOS:</label>
+                <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">📷 📁 ADJUNTAR FOTOS Y DOCUMENTOS (PDF, DOCX, TXT):</label>
                 <div id="drop-zone" class="drop-zone" ondragover="permitirSoltar(event)" ondragleave="salirZona(event)" ondrop="soltarArchivos(event)">
-                    <p style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">📁 ARRASTRA TUS FOTOS AQUÍ O</p>
-                    <input type="file" id="input-fotos" accept="image/*" multiple onchange="manejarSubidaFotos(event)" style="font-size: 10px;">
-                    <div id="galeria-preview" class="galeria-fotos"></div>
+                    <p style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">📁 ARRASTRA ARCHIVOS O FOTOS AQUÍ O</p>
+                    <input type="file" id="input-fotos" accept="image/*,.pdf,.doc,.docx,.txt" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;">
+                    <div id="galeria-preview" class="galeria-adjuntos"></div>
                 </div>
             </div>
 
@@ -373,9 +649,27 @@
         };
 
         const DEMO_COCHESH = [
-            { idDoc: "demo-1", id: 1, Taller: "APV Cars", matricula: "1234-ABC", modelo: "AUDI A4", notas: "CARGO CLIENTE", urgente: true, fechaEntradaIngreso: "2026-11-01", fechaEntrega: "2026-11-10", columna: 1, piezas: ["CAPÓ", "TECHO"], textoLibre: "GOLPE DELANTERO", fotos: [] },
-            { idDoc: "demo-2", id: 2, Taller: "Auto Bros", matricula: "5678-DEF", modelo: "SEAT LEON", notas: "CARGO COMPAÑIA SIN FRANQ", urgente: false, fechaEntradaIngreso: "2026-11-02", fechaEntrega: "2026-11-08", columna: 2, piezas: ["PARAGOLPES TRASERO"], textoLibre: "PINTAR PARAGOLPES", fotos: [] },
-            { idDoc: "demo-3", id: 3, Taller: "APV Cars", matricula: "9012-GHI", modelo: "BMW SERIE 3", notas: "CARGO COMPAÑIA CON FRANQ", urgente: false, fechaEntradaIngreso: "2026-10-28", fechaEntrega: "2026-11-05", columna: 3, fechaEntradaTaller: Date.now() - (3600000 * 48), piezas: ["PUERTA DELANTERA IZQUIERDA"], textoLibre: "REPARACIÓN EN PROCESO", fotos: [] }
+            { 
+                idDoc: "demo-1", id: 1, Taller: "APV Cars", matricula: "1234-ABC", modelo: "AUDI A4", 
+                esCompania: false, esCliente: true,
+                cliVenta: 1200, cliCoste: 450, cliRecambios: 200,
+                compVenta: 0, compCoste: 0, compRecambios: 0,
+                urgente: true, fechaEntradaIngreso: "2026-11-01", fechaEntrega: "2026-11-10", columna: 1, piezas: ["CAPÓ", "TECHO"], textoLibre: "GOLPE DELANTERO", fotos: [] 
+            },
+            { 
+                idDoc: "demo-2", id: 2, Taller: "Auto Bros", matricula: "5678-DEF", modelo: "SEAT LEON", 
+                esCompania: true, esCliente: false,
+                compVenta: 850, compCoste: 300, compRecambios: 150,
+                cliVenta: 0, cliCoste: 0, cliRecambios: 0,
+                urgente: false, fechaEntradaIngreso: "2026-11-02", fechaEntrega: "2026-11-08", columna: 2, piezas: ["PARAGOLPES TRASERO"], textoLibre: "PINTAR PARAGOLPES", fotos: [] 
+            },
+            { 
+                idDoc: "demo-3", id: 3, Taller: "APV Cars", matricula: "9012-GHI", modelo: "BMW SERIE 3", 
+                esCompania: true, esCliente: true,
+                compVenta: 1500, compCoste: 500, compRecambios: 300,
+                cliVenta: 600, cliCoste: 200, cliRecambios: 150,
+                urgente: false, fechaEntradaIngreso: "2026-10-28", fechaEntrega: "2026-11-05", columna: 5, fechaEntradaTaller: Date.now() - (3600000 * 48), piezas: ["PUERTA DELANTERA IZQUIERDA"], textoLibre: "ARCHIVADO REPARADO", fotos: [] 
+            }
         ];
 
         let db = null;
@@ -383,6 +677,10 @@
         let usuarioActual = localStorage.getItem('taller_rol') || null;
         let cocheIdActual = null;
         let fotosTemporales = [];
+        let estadisticasVisibles = false;
+        
+        let chartImportesInstance = null;
+        let chartPagadorInstance = null;
 
         try {
             if (typeof firebase !== 'undefined') {
@@ -453,15 +751,36 @@
             const esAdmin = (usuarioActual === 'ADMIN');
             const selectorFiltro = document.getElementById('filtro-taller');
             const formCrear = document.getElementById('p-form-container');
+            const btnToggleStats = document.getElementById('btn-toggle-stats-btn');
+            const statsPanel = document.getElementById('admin-stats-container');
 
             if (!esAdmin) {
                 selectorFiltro.value = usuarioActual;
                 selectorFiltro.disabled = true;
                 formCrear.style.display = 'none';
+                btnToggleStats.style.display = 'none';
+                statsPanel.style.display = 'none';
             } else {
                 selectorFiltro.disabled = false;
                 formCrear.style.display = 'flex'; 
+                btnToggleStats.style.display = 'flex';
+                statsPanel.style.display = estadisticasVisibles ? 'block' : 'none';
                 actualizarColorSelectTaller();
+            }
+        }
+
+        function toggleEstadisticasPanel() {
+            estadisticasVisibles = !estadisticasVisibles;
+            const statsPanel = document.getElementById('admin-stats-container');
+            const lblToggle = document.getElementById('lbl-toggle-stats');
+
+            if (estadisticasVisibles) {
+                statsPanel.style.display = 'block';
+                lblToggle.innerText = 'OCULTAR ESTADÍSTICAS';
+                actualizarEstadisticasAdmin();
+            } else {
+                statsPanel.style.display = 'none';
+                lblToggle.innerText = 'MOSTRAR ESTADÍSTICAS';
             }
         }
 
@@ -575,9 +894,31 @@
                 filtrados.forEach(c => {
                     const claseTaller = (c.Taller === "APV Cars") ? "t-apv" : "t-autobros";
                     
-                    const urg = c.urgente ? `<div style="margin-top: 3px;"><span class="badge-urgente">🚨 URGENTE ✓</span></div>` : '';
+                    const urg = c.urgente ? `<span class="badge-urgente">🚨 URGENTE</span>` : '';
+                    
+                    const badgeComp = c.esCompania ? `<span class="badge-pagador badge-compania">🏢 COMPAÑÍA</span>` : '';
+                    const badgeCli = c.esCliente ? `<span class="badge-pagador badge-cliente">👤 CLIENTE</span>` : '';
+                    
                     const pza = c.piezas && c.piezas.length > 0 ? `<span class="badge-piezas">🛠️ ${c.piezas.length} PZA</span>` : '';
-                    const fts = c.fotos && c.fotos.length > 0 ? `<span class="badge-fotos">📷 ${c.fotos.length} FOTO(S)</span>` : '';
+                    
+                    const totalFotos = (c.fotos || []).filter(f => f.tipo === 'imagen' || typeof f === 'string').length;
+                    const totalDocs = (c.fotos || []).filter(f => f.tipo === 'doc').length;
+
+                    const fts = totalFotos > 0 ? `<span class="badge-fotos">📷 ${totalFotos} FOTO(S)</span>` : '';
+                    const dcs = totalDocs > 0 ? `<span class="badge-docs">📄 ${totalDocs} DOC(S)</span>` : '';
+
+                    let infoEconomica = '';
+                    if (esAdmin) {
+                        const totalVentaPura = Number(c.compVenta || 0) + Number(c.cliVenta || 0);
+                        const totalCoste = Number(c.compCoste || 0) + Number(c.cliCoste || 0);
+                        const totalRecambios = Number(c.compRecambios || 0) + Number(c.cliRecambios || 0);
+                        
+                        if (totalVentaPura > 0 || totalCoste > 0 || totalRecambios > 0) {
+                            infoEconomica = `<div style="font-size:9px; font-weight:700; color:#38bdf8; margin-top:3px; background:#181d22; padding:2px 4px; border-radius:3px; border:1px solid #334155;">
+                                💶 V.ZSUB: ${totalVentaPura.toFixed(0)}€ | Rec: ${totalRecambios.toFixed(0)}€ | C: ${totalCoste.toFixed(0)}€
+                            </div>`;
+                        }
+                    }
 
                     let botonesAccion = '';
                     if (esAdmin) {
@@ -601,11 +942,13 @@
                                 <span class="badge-taller">${c.Taller.toUpperCase()}</span>
                                 <div style="text-align: right;">
                                     <div style="font-size: 14px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; margin-bottom: 2px;">${c.matricula.toUpperCase()}</div>
-                                    <div style="font-size: 12px; font-weight: 500; color: #94a3b8; letter-spacing: 0.3px;">${c.modelo.toUpperCase()}</div>
+                                    <div style="font-size: 12px; font-weight: 500; color: #cbd5e1; letter-spacing: 0.3px;">${c.modelo.toUpperCase()}</div>
                                 </div>
                             </div>
-                            ${c.notas ? `<div style="font-weight: 600; color: #cbd5e1; margin-top: 2px; font-size: 9px;">📌 ${c.notas.toUpperCase()}</div>` : ''}
-                            ${urg}
+                            <div style="display:flex; gap:4px; margin-top:2px; flex-wrap:wrap;">
+                                ${urg} ${badgeComp} ${badgeCli}
+                            </div>
+                            ${infoEconomica}
                             
                             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;" onclick="event.stopPropagation()">
                                 <div class="badge-fecha-editable">
@@ -618,12 +961,199 @@
                                 </div>
                             </div>
 
-                            ${c.textoLibre ? `<div style="font-style: italic; color: #94a3b8; margin-top: 3px; font-size: 9px;">💬 ${c.textoLibre.toUpperCase()}</div>` : ''}
-                            <div style="margin-top: 5px; display:flex; gap:4px;">${pza} ${fts}</div>
+                            ${c.textoLibre ? `<div style="font-style: italic; color: #cbd5e1; margin-top: 3px; font-size: 9px;">💬 ${c.textoLibre.toUpperCase()}</div>` : ''}
+                            <div style="margin-top: 5px; display:flex; gap:4px;">${pza} ${fts} ${dcs}</div>
                             ${botonesAccion}
                         </div>`;
                 });
                 columnaDiv.innerHTML = colHtml;
+            });
+
+            if (esAdmin && estadisticasVisibles) {
+                actualizarEstadisticasAdmin();
+            }
+        }
+
+        /* --- ESTADÍSTICAS Y CÁLCULOS FINANCIEROS (EXCLUSIVO COLUMNA 5 - ARCHIVADOS) --- */
+        function actualizarEstadisticasAdmin() {
+            if (usuarioActual !== 'ADMIN' || !estadisticasVisibles) return;
+
+            const filtroTaller = document.getElementById('stats-filtro-taller').value;
+            const filtroPagador = document.getElementById('stats-filtro-pagador').value;
+            
+            // FILTRO ESTRICTO: Solo se contabilizan los vehículos cuya columna sea exactamente la 5 (archivados)
+            const cochesFiltrados = coches.filter(c => {
+                const esColumna5 = (c.columna === 5);
+                const matchTaller = (filtroTaller === 'TODOS' || c.Taller === filtroTaller);
+                let matchPagador = true;
+                if (filtroPagador === 'COMPANIA') matchPagador = !!c.esCompania;
+                if (filtroPagador === 'CLIENTE') matchPagador = !!c.esCliente;
+                return esColumna5 && matchTaller && matchPagador;
+            });
+
+            let totalVentaZsub = 0, totalCosteZsub = 0, totalRecambiosVenta = 0;
+            let countCompania = 0, countCliente = 0;
+
+            cochesFiltrados.forEach(c => {
+                if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') {
+                    if (c.esCompania) {
+                        totalVentaZsub += Number(c.compVenta || 0);
+                        totalCosteZsub += Number(c.compCoste || 0);
+                        totalRecambiosVenta += Number(c.compRecambios || 0);
+                    }
+                }
+                if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') {
+                    if (c.esCliente) {
+                        totalVentaZsub += Number(c.cliVenta || 0);
+                        totalCosteZsub += Number(c.cliCoste || 0);
+                        totalRecambiosVenta += Number(c.cliRecambios || 0);
+                    }
+                }
+
+                if (c.esCompania) countCompania++;
+                if (c.esCliente) countCliente++;
+            });
+
+            // Beneficio calculado estrictamente con Venta ZSUB pura (sin recambios) menos Coste ZSUB
+            const beneficio = totalVentaZsub - totalCosteZsub;
+            const porcBeneficio = totalVentaZsub > 0 ? (beneficio / totalVentaZsub) * 100 : 0;
+            const margenRecambio = totalRecambiosVenta * 0.25;
+
+            document.getElementById('st-total-coches').innerText = cochesFiltrados.length;
+            document.getElementById('st-total-venta').innerText = totalVentaZsub.toLocaleString('es-ES', { minimumFractionDigits: 0 }) + ' €';
+            document.getElementById('st-total-coste').innerText = totalCosteZsub.toLocaleString('es-ES', { minimumFractionDigits: 0 }) + ' €';
+            document.getElementById('st-total-recambios').innerText = totalRecambiosVenta.toLocaleString('es-ES', { minimumFractionDigits: 0 }) + ' €';
+            document.getElementById('st-beneficio').innerText = beneficio.toLocaleString('es-ES', { minimumFractionDigits: 0 }) + ' €';
+            document.getElementById('st-porc-beneficio').innerText = porcBeneficio.toFixed(1) + ' %';
+            document.getElementById('st-margen-recambio').innerText = margenRecambio.toLocaleString('es-ES', { minimumFractionDigits: 0 }) + ' €';
+            document.getElementById('st-pagador-ratio').innerText = `${countCompania} COMP | ${countCliente} CLI`;
+
+            renderGraficosAdmin(filtroTaller, filtroPagador, cochesFiltrados);
+        }
+
+        function renderGraficosAdmin(filtroTaller, filtroPagador, cochesFiltrados) {
+            let labelsGrafico = [];
+            let ventaPorTaller = [];
+            let costePorTaller = [];
+            let recambiosPorTaller = [];
+
+            const tituloGrafico1 = document.getElementById('chart-title-1');
+
+            if (filtroTaller === 'TODOS') {
+                tituloGrafico1.innerText = "Comparativa de Importes por Taller (€)";
+                labelsGrafico = ['APV CARS', 'AUTO BROS'];
+                const talleres = ['APV Cars', 'Auto Bros'];
+                
+                ventaPorTaller = talleres.map(t => {
+                    let val = coches.filter(c => c.columna === 5 && c.Taller === t && (filtroPagador === 'TODOS' || (filtroPagador === 'COMPANIA' && c.esCompania) || (filtroPagador === 'CLIENTE' && c.esCliente))).reduce((acc, c) => {
+                        let v = 0;
+                        if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) v += Number(c.compVenta || 0); }
+                        if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) v += Number(c.cliVenta || 0); }
+                        return acc + v;
+                    }, 0);
+                    return val > 0 ? val : null;
+                });
+
+                costePorTaller = talleres.map(t => {
+                    let val = coches.filter(c => c.columna === 5 && c.Taller === t).reduce((acc, c) => {
+                        let co = 0;
+                        if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) co += Number(c.compCoste || 0); }
+                        if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) co += Number(c.cliCoste || 0); }
+                        return acc + co;
+                    }, 0);
+                    return val > 0 ? val : null;
+                });
+
+                recambiosPorTaller = talleres.map(t => {
+                    let val = coches.filter(c => c.columna === 5 && c.Taller === t).reduce((acc, c) => {
+                        let r = 0;
+                        if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) r += Number(c.compRecambios || 0); }
+                        if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) r += Number(c.cliRecambios || 0); }
+                        return acc + r;
+                    }, 0);
+                    return val > 0 ? val : null;
+                });
+            } else {
+                tituloGrafico1.innerText = `Importes Totales - ${filtroTaller.toUpperCase()} (€)`;
+                labelsGrafico = [filtroTaller.toUpperCase()];
+                
+                const vTaller = cochesFiltrados.reduce((acc, c) => {
+                    let v = 0;
+                    if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) v += Number(c.compVenta || 0); }
+                    if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) v += Number(c.cliVenta || 0); }
+                    return acc + v;
+                }, 0);
+
+                const cTaller = cochesFiltrados.reduce((acc, c) => {
+                    let co = 0;
+                    if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) co += Number(c.compCoste || 0); }
+                    if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) co += Number(c.cliCoste || 0); }
+                    return acc + co;
+                }, 0);
+
+                const rTaller = cochesFiltrados.reduce((acc, c) => {
+                    let r = 0;
+                    if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) r += Number(c.compRecambios || 0); }
+                    if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) r += Number(c.cliRecambios || 0); }
+                    return acc + r;
+                }, 0);
+
+                ventaPorTaller = [vTaller > 0 ? vTaller : null];
+                costePorTaller = [cTaller > 0 ? cTaller : null];
+                recambiosPorTaller = [rTaller > 0 ? rTaller : null];
+            }
+
+            const ctx1 = document.getElementById('chart-importes-taller').getContext('2d');
+            if (chartImportesInstance) chartImportesInstance.destroy();
+
+            chartImportesInstance = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: labelsGrafico,
+                    datasets: [
+                        { label: 'Ventas ZSUB (€)', data: ventaPorTaller, backgroundColor: '#10b981' },
+                        { label: 'Costes ZSUB (€)', data: costePorTaller, backgroundColor: '#f87171' },
+                        { label: 'Venta Recambios (€)', data: recambiosPorTaller, backgroundColor: '#fbbf24' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 10 } } } },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                    }
+                }
+            });
+
+            const ventaCompaTotal = cochesFiltrados.reduce((acc, c) => acc + (c.esCompania ? Number(c.compVenta || 0) : 0), 0);
+            const ventaClienteTotal = cochesFiltrados.reduce((acc, c) => acc + (c.esCliente ? Number(c.cliVenta || 0) : 0), 0);
+
+            const datosRosquilla = [
+                ventaCompaTotal > 0 ? ventaCompaTotal : null,
+                ventaClienteTotal > 0 ? ventaClienteTotal : null
+            ];
+
+            const ctx2 = document.getElementById('chart-pagador').getContext('2d');
+            if (chartPagadorInstance) chartPagadorInstance.destroy();
+
+            chartPagadorInstance = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ventas ZSUB Compañía (€)', 'Ventas ZSUB Cliente (€)'],
+                    datasets: [{
+                        data: datosRosquilla,
+                        backgroundColor: ['#3b82f6', '#eab308'],
+                        borderWidth: 1,
+                        borderColor: '#272d34'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } } }
+                }
             });
         }
 
@@ -649,12 +1179,34 @@
             document.getElementById('modal-urgente').checked = !!c.urgente;
             document.getElementById('modal-vehiculo-completo').checked = false;
 
+            const secAdmin = document.getElementById('modal-seccion-admin');
+            if (esAdmin) {
+                secAdmin.style.display = 'block';
+                
+                document.getElementById('modal-chk-compania').checked = !!c.esCompania;
+                document.getElementById('modal-comp-venta').value = c.compVenta || '';
+                document.getElementById('modal-comp-coste').value = c.compCoste || '';
+                document.getElementById('modal-comp-recambios').value = c.compRecambios || '';
+
+                document.getElementById('modal-chk-cliente').checked = !!c.esCliente;
+                document.getElementById('modal-cli-venta').value = c.cliVenta || '';
+                document.getElementById('modal-cli-coste').value = c.cliCoste || '';
+                document.getElementById('modal-cli-recambios').value = c.cliRecambios || '';
+            } else {
+                secAdmin.style.display = 'none';
+            }
+
             document.querySelectorAll('.chk-pieza').forEach(chk => {
                 chk.checked = c.piezas && c.piezas.includes(chk.value);
             });
 
             document.getElementById('modal-texto-libre').value = (c.textoLibre || '').toUpperCase();
-            fotosTemporales = c.fotos ? [...c.fotos] : [];
+            
+            fotosTemporales = (c.fotos || []).map(f => {
+                if (typeof f === 'string') return { tipo: 'imagen', data: f, nombre: 'Foto' };
+                return f;
+            });
+
             actualizarGaleriaPreview();
 
             document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdmin);
@@ -679,7 +1231,7 @@
             procesarArchivosFotos(e.dataTransfer.files); 
         }
 
-        function manejarSubidaFotos(e) {
+        function manejarSubidaArchivos(e) {
             procesarArchivosFotos(e.target.files);
             e.target.value = '';
         }
@@ -687,32 +1239,54 @@
         function procesarArchivosFotos(archivos) {
             if(!archivos) return;
             Array.from(archivos).forEach(archivo => {
-                if(archivo.type.startsWith('image/')) {
-                    const lector = new FileReader();
-                    lector.onload = function(evt) {
-                        fotosTemporales.push(evt.target.result);
-                        actualizarGaleriaPreview();
-                    };
-                    lector.readAsDataURL(archivo);
-                }
+                const lector = new FileReader();
+                const esImagen = archivo.type.startsWith('image/');
+
+                lector.onload = function(evt) {
+                    fotosTemporales.push({
+                        tipo: esImagen ? 'imagen' : 'doc',
+                        nombre: archivo.name,
+                        data: evt.target.result
+                    });
+                    actualizarGaleriaPreview();
+                };
+
+                lector.readAsDataURL(archivo);
             });
         }
 
         function actualizarGaleriaPreview() {
             const cont = document.getElementById('galeria-preview');
             cont.innerHTML = '';
-            fotosTemporales.forEach((foto, index) => {
-                cont.innerHTML += `
-                    <div class="miniatura-container">
-                        <img src="${foto}" alt="Foto" onclick="abrirVisorFoto(event, ${index})">
-                        <button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>
-                    </div>`;
+            fotosTemporales.forEach((adj, index) => {
+                const esImg = adj.tipo === 'imagen' || typeof adj === 'string';
+                const srcData = typeof adj === 'string' ? adj : adj.data;
+                const nombre = adj.nombre || `Adjunto ${index+1}`;
+
+                if (esImg) {
+                    cont.innerHTML += `
+                        <div class="miniatura-container">
+                            <img src="${srcData}" alt="Foto" onclick="abrirVisorFoto(event, ${index})">
+                            <button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>
+                        </div>`;
+                } else {
+                    cont.innerHTML += `
+                        <div class="adjunto-item">
+                            <span style="font-size:14px;">📄</span>
+                            <a href="${srcData}" download="${nombre}" style="color:#60a5fa; text-decoration:none; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${nombre}">
+                                ${nombre}
+                            </a>
+                            <button class="btn-del" onclick="eliminarFotoTemporal(${index})">✕</button>
+                        </div>`;
+                }
             });
         }
 
         function abrirVisorFoto(e, index) {
             e.stopPropagation();
-            document.getElementById('visor-foto-img').src = fotosTemporales[index];
+            const item = fotosTemporales[index];
+            const src = typeof item === 'string' ? item : item.data;
+            document.getElementById('visor-foto-img').src = src;
             document.getElementById('visor-foto').classList.add('visible');
         }
 
@@ -749,6 +1323,16 @@
                 document.querySelectorAll('.chk-pieza:checked').forEach(chk => seleccionadas.push(chk.value));
                 datosActualizar.piezas = seleccionadas;
                 datosActualizar.urgente = document.getElementById('modal-urgente').checked;
+                
+                datosActualizar.esCompania = document.getElementById('modal-chk-compania').checked;
+                datosActualizar.compVenta = parseFloat(document.getElementById('modal-comp-venta').value) || 0;
+                datosActualizar.compCoste = parseFloat(document.getElementById('modal-comp-coste').value) || 0;
+                datosActualizar.compRecambios = parseFloat(document.getElementById('modal-comp-recambios').value) || 0;
+
+                datosActualizar.esCliente = document.getElementById('modal-chk-cliente').checked;
+                datosActualizar.cliVenta = parseFloat(document.getElementById('modal-cli-venta').value) || 0;
+                datosActualizar.cliCoste = parseFloat(document.getElementById('modal-cli-coste').value) || 0;
+                datosActualizar.cliRecambios = parseFloat(document.getElementById('modal-cli-recambios').value) || 0;
             }
 
             Object.assign(c, datosActualizar);
@@ -795,7 +1379,6 @@
             const matInput = document.getElementById('f-mat');
             const modInput = document.getElementById('f-mod');
             const tallerInput = document.getElementById('f-taller');
-            const notasInput = document.getElementById('f-notas');
             const fechaInput = document.getElementById('f-fecha');
 
             const mat = matInput.value.trim().toUpperCase();
@@ -810,7 +1393,10 @@
                 Taller: tallerInput.value,
                 matricula: mat,
                 modelo: mod || "GENÉRICO",
-                notas: notasInput.value,
+                esCompania: false,
+                esCliente: false,
+                compVenta: 0, compCoste: 0, compRecambios: 0,
+                cliVenta: 0, cliCoste: 0, cliRecambios: 0,
                 urgente: false,
                 fechaEntradaIngreso: fechaInput.value || hoyStr,
                 fechaEntrega: fechaInput.value || hoyStr,
@@ -832,7 +1418,6 @@
 
             matInput.value = '';
             modInput.value = '';
-            notasInput.value = '';
             fechaInput.value = '';
             matInput.focus();
         }
