@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Taller - APV Cars & Auto Bros</title>
-    
-    <!-- ETIQUETA DEL ICONO / FAVICON -->
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" href="https://img.icons8.com/?size=96&id=18733&format=png">
+   
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -694,7 +693,7 @@
 
         const CREDENCIALES = {
             "ADMIN": "admin2026",
-            "ADMIN_LECTURA": "lectura2026", // <--- NUEVA CONTRASEÑA SOLO LECTURA
+            "ADMIN_LECTURA": "lectura2026",
             "APV Cars": "apv2026",
             "Auto Bros": "autobros2026"
         };
@@ -713,10 +712,7 @@
         const MARGEN_RECAMBIO = 0.25;
         const MS_DIA = 86400000;
         
-        // VISTA ADMIN: ADMIN total o ADMIN lectura
         const esPerfilAdmin = () => usuarioActual === 'ADMIN' || usuarioActual === 'ADMIN_LECTURA';
-        
-        // ESCRITURA ADMIN: Solo el ADMIN total puede modificar
         const soyAdmin = () => usuarioActual === 'ADMIN';
 
         const LIMITE_ADJUNTOS_BYTES = 900000;
@@ -906,7 +902,7 @@
                 statsPanel.style.display = 'none';
             } else {
                 selectorFiltro.disabled = false;
-                formCrear.style.display = esAdminEscritura ? 'flex' : 'none'; // Solo admin escritura crea coches
+                formCrear.style.display = esAdminEscritura ? 'flex' : 'none';
                 btnToggleStats.style.display = 'flex';
                 statsPanel.style.display = estadisticasVisibles ? 'block' : 'none';
                 actualizarColorSelectTaller();
@@ -1340,10 +1336,8 @@
 
             actualizarGaleriaPreview();
 
-            // Bloquear / Desbloquear inputs según si tiene permisos de modificación
             document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdminEscritura);
             
-            // Ocultar / Mostrar botón de guardar y zona de adjuntar
             document.getElementById('btn-guardar-modal').style.display = esAdminEscritura ? 'inline-block' : 'none';
             document.getElementById('seccion-adjuntar-archivos').style.display = esAdminEscritura ? 'block' : 'none';
 
