@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Taller - APV Cars & Auto Bros</title>
-    <!-- ICONO DE LA PESTAÑA -->
-    <link rel="icon" type="image/png" href="favicon.png">
-    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
@@ -60,6 +57,16 @@
         
         .user-badge { background: #0284c7; color: #ffffff; padding: 4px 10px; border-radius: 15px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .btn-logout { background: #dc2626; color: white; border: none; padding: 3px 6px; border-radius: 4px; font-size: 10px; cursor: pointer; }
+
+        .buscador-wrap { position: relative; display: inline-flex; align-items: center; }
+        .btn-limpiar {
+            display: none; position: absolute; right: 5px;
+            width: 18px; height: 18px; padding: 0; border: none; border-radius: 50%;
+            background: #5a6270; color: #ffffff; font-size: 10px; line-height: 1; cursor: pointer;
+            align-items: center; justify-content: center;
+        }
+        .btn-limpiar.visible { display: inline-flex; }
+        .btn-limpiar:hover { background: #dc2626; }
 
         .p-form { 
             background: #272d34; 
@@ -140,7 +147,7 @@
         .stats-header h2 { font-size: 15px; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; }
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 10px;
             margin-bottom: 16px;
         }
@@ -177,7 +184,7 @@
             width: 100%;
             flex-grow: 1;
             overflow-y: auto;
-            align-items: start;
+            align-items: stretch;
             padding-bottom: 20px;
         }
 
@@ -221,6 +228,7 @@
         .col-titulo-4 { background-color: #15803d; }
         .col-titulo-5 { background-color: #525966; }
         
+        /* TARJETAS CON FONDO Y ETIQUETAS MÁS CLARAS Y VISIBLES */
         .tarjeta { 
             background-color: #3d454f !important; 
             border-radius: 6px; 
@@ -260,6 +268,13 @@
         }
 
         .badge-taller { padding: 3px 8px; border-radius: 4px; font-size: 10px; display: inline-block; }
+        .badge-dias {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 22px; height: 22px; padding: 0 5px; box-sizing: border-box;
+            border-radius: 999px; background: #ef4444; color: #ffffff;
+            font-size: 12px; font-weight: 800; line-height: 1;
+            box-shadow: 0 0 0 2px #3d454f, 0 2px 6px rgba(0,0,0,0.5);
+        }
         .badge-urgente { background-color: #b91c1c; color: #ffffff; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 9px; border: 1px solid #ef4444; display: inline-block; }
         .badge-pagador { padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 9px; display: inline-block; }
         .badge-compania { background-color: #2563eb; color: #ffffff; border: 1px solid #60a5fa; }
@@ -274,6 +289,14 @@
         .badge-fotos { background: #c2410c; color: #ffffff; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #fb923c; font-weight: 700; }
         .badge-docs { background: #1d4ed8; color: #ffffff; padding: 3px 6px; border-radius: 3px; font-size: 9px; border: 1px solid #93c5fd; font-weight: 700; }
         
+        .badge-fecha-fija {
+            color: #e2e8f0; font-size: 9px; font-weight: 700; margin-top: 4px;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .badge-fecha-fija .valor {
+            background-color: #262c33; color: #cbd5e1; border: 1px solid #555f6d;
+            border-radius: 3px; font-size: 10px; font-weight: 600; padding: 2px 6px;
+        }
         .badge-fecha-editable { 
             background: transparent !important; 
             color: #e2e8f0; 
@@ -366,7 +389,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -391,7 +414,7 @@
             <header>
                 <h1>⚙️ Control de Taller (APV Cars & Auto Bros)</h1>
                 <div style="display:flex; align-items:center; gap: 10px; flex-wrap: wrap;">
-                    <div id="user-display" class="user-badge">
+                    <div class="user-badge">
                         <span id="user-role-text">ADMIN</span>
                         <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
                     </div>
@@ -401,7 +424,10 @@
                     </button>
 
                     <div class="toolbar">
-                        <input type="text" id="buscador" placeholder="🔍 BUSCAR MATRÍCULA..." onkeyup="dibujar()" style="width: 180px;">
+                        <div class="buscador-wrap">
+                            <input type="text" id="buscador" placeholder="🔍 BUSCAR MATRÍCULA..." oninput="actualizarBuscador()" style="width: 180px; padding-right: 28px;">
+                            <button type="button" id="btn-limpiar-buscador" class="btn-limpiar" onclick="limpiarBuscador()" title="Borrar búsqueda" aria-label="Borrar búsqueda">✕</button>
+                        </div>
                         <select id="filtro-taller" onchange="dibujar()">
                             <option value="TODOS">TODOS LOS TALLERES</option>
                             <option value="APV Cars">APV CARS</option>
@@ -416,35 +442,19 @@
                 <div class="stats-header">
                     <h2>📊 Panel de Estadísticas Financieras (Solo Columna 5 - Archivados)</h2>
                     <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                        
-                        <!-- FILTRO POR AÑO (PRIMERO) -->
-                        <select id="stats-filtro-ano" onchange="actualizarEstadisticasAdmin()" style="font-size:11px; padding:4px 8px;">
+                        <select id="stats-filtro-anio" onchange="actualizarEstadisticasAdmin()" style="font-size:11px; padding:4px 8px;">
                             <option value="TODOS">TODOS LOS AÑOS</option>
-                            <option value="2025">2025</option>
-                            <option value="2026">2026</option>
-                            <option value="2027">2027</option>
                         </select>
-
-                        <!-- FILTRO POR MES (SEGUNDO) -->
                         <select id="stats-filtro-mes" onchange="actualizarEstadisticasAdmin()" style="font-size:11px; padding:4px 8px;">
                             <option value="TODOS">TODOS LOS MESES</option>
-                            <option value="0">Enero</option>
-                            <option value="1">Febrero</option>
-                            <option value="2">Marzo</option>
-                            <option value="3">Abril</option>
-                            <option value="4">Mayo</option>
-                            <option value="5">Junio</option>
-                            <option value="6">Julio</option>
-                            <option value="7">Agosto</option>
-                            <option value="8">Septiembre</option>
-                            <option value="9">Octubre</option>
-                            <option value="10">Noviembre</option>
-                            <option value="11">Diciembre</option>
+                            <option value="0">ENERO</option><option value="1">FEBRERO</option><option value="2">MARZO</option>
+                            <option value="3">ABRIL</option><option value="4">MAYO</option><option value="5">JUNIO</option>
+                            <option value="6">JULIO</option><option value="7">AGOSTO</option><option value="8">SEPTIEMBRE</option>
+                            <option value="9">OCTUBRE</option><option value="10">NOVIEMBRE</option><option value="11">DICIEMBRE</option>
                         </select>
-
                         <select id="stats-filtro-pagador" onchange="actualizarEstadisticasAdmin()" style="font-size:11px; padding:4px 8px;">
                             <option value="TODOS">TODOS LOS PAGADORES</option>
-                            <option value="COMPANIA">SOLO COMPAÑÍA</option>
+                            <option value="COMPANIA">SOLO CIA. ASEGURADORA</option>
                             <option value="CLIENTE">SOLO CLIENTE</option>
                         </select>
                         <select id="stats-filtro-taller" onchange="actualizarEstadisticasAdmin()" style="font-size:11px; padding:4px 8px;">
@@ -463,8 +473,8 @@
                     </div>
                     <div class="stat-card">
                         <div class="title">⏱️ Tiempo Medio Rep.</div>
-                        <div id="st-tiempo-medio" class="value" style="color:#a855f7;">-</div>
-                        <div class="subtext">Días medios (Col 3 a Col 4)</div>
+                        <div id="st-tiempo-medio" class="value">-</div>
+                        <div id="st-tiempo-sub" class="subtext">Col 3 a Col 4</div>
                     </div>
                     <div class="stat-card">
                         <div class="title">💶 Ventas ZSUB</div>
@@ -498,8 +508,8 @@
                     </div>
                     <div class="stat-card">
                         <div class="title">💳 Pagador</div>
-                        <div id="st-pagador-ratio" class="value" style="font-size: 12px; color:#e2e8f0; margin-top: 4px;">0 COMP | 0 CLI</div>
-                        <div class="subtext">Compañía vs Cliente</div>
+                        <div id="st-pagador-ratio" class="value" style="font-size: 12px; line-height: 1.4; color:#e2e8f0; margin-top: 4px;">0 CIA. ASEGURADORA<br>0 CLIENTE</div>
+                        <div class="subtext">Cia. Aseguradora vs Cliente</div>
                     </div>
                 </div>
 
@@ -520,7 +530,7 @@
             </div>
 
             <!-- FORMULARIO DE INGRESO -->
-            <div id="p-form-container" class="p-form">
+            <div id="p-form-container" class="p-form" style="justify-content: center;">
                 <select id="f-taller" onchange="actualizarColorSelectTaller()">
                     <option value="APV Cars" style="background-color: #00d2ff !important; color: #002233 !important; font-weight: 700;">APV CARS</option>
                     <option value="Auto Bros" style="background-color: #10b981 !important; color: #022c22 !important; font-weight: 700;">AUTO BROS</option>
@@ -528,11 +538,13 @@
                 <input type="text" id="f-mat" placeholder="MATRÍCULA (EJ: 1234-ABC)" onkeypress="chequearEnter(event)">
                 <input type="text" id="f-mod" placeholder="MARCA / MODELO" onkeypress="chequearEnter(event)">
                 
+                <div style="display: flex; align-items: center; gap: 40px;">
                 <div style="display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: #cbd5e1;">
-                    📅 <span style="font-size: 11px; font-weight: 700;">ENTREGA:</span> 
+                    📅 <span style="font-size: 11px; font-weight: 700;">ENTREGA ESTIMADA:</span> 
                     <input type="date" id="f-fecha" style="padding: 6px 8px; font-size: 11px; font-weight: 600; width: 130px;">
                 </div>
                 <button onclick="agregarVehiculo()">+ INGRESAR COCHE</button>
+                </div>
             </div>
         </div>
 
@@ -573,7 +585,7 @@
                 <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                     <div class="seccion-pagador-box box-comp">
                         <label style="font-size: 11px; font-weight: 700; color: #60a5fa; cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
-                            <input type="checkbox" id="modal-chk-compania" style="accent-color: #3b82f6; width: 15px; height: 15px;" class="solo-admin"> 🏢 CARGO COMPAÑÍA
+                            <input type="checkbox" id="modal-chk-compania" style="accent-color: #3b82f6; width: 15px; height: 15px;" class="solo-admin"> 🏢 CARGO CIA. ASEGURADORA
                         </label>
                         <div style="display: flex; gap: 6px;">
                             <div>
@@ -676,9 +688,9 @@
         };
 
         const CREDENCIALES = {
-            "ADMIN": "admin932379822",
-            "APV Cars": "apv640602765",
-            "Auto Bros": "ab654554686"
+            "ADMIN": "admin2026",
+            "APV Cars": "apv2026",
+            "Auto Bros": "autobros2026"
         };
 
         let db = null;
@@ -687,9 +699,130 @@
         let cocheIdActual = null;
         let fotosTemporales = [];
         let estadisticasVisibles = false;
-        
+        let verArchivadosAnteriores = false; // columna 5: mostrar también los archivados de meses anteriores
+
         let chartImportesInstance = null;
         let chartPagadorInstance = null;
+
+        const MARGEN_RECAMBIO = 0.25; // 25% sobre la venta de recambios (ajustar aquí si cambia)
+        const MS_DIA = 86400000;
+        const soyAdmin = () => usuarioActual === 'ADMIN';
+        const LIMITE_ADJUNTOS_BYTES = 900000; // Firestore limita cada documento a ~1 MiB
+
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        }
+
+        // Convierte número, Timestamp de Firestore, Date o texto (YYYY-MM-DD / ISO) en milisegundos; null si no es válido
+        function aMs(v) {
+            if (v === null || v === undefined || v === '') return null;
+            if (typeof v === 'number') return isFinite(v) ? v : null;
+            if (typeof v.toMillis === 'function') return v.toMillis();
+            if (v instanceof Date) return isNaN(v) ? null : v.getTime();
+            const f = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ ,T]+(\d{1,2}):(\d{2}))?/.exec(String(v).trim());
+            if (f) {
+                const y = +f[3] < 100 ? 2000 + +f[3] : +f[3];
+                return new Date(y, +f[2] - 1, +f[1], +(f[4] || 0), +(f[5] || 0)).getTime();
+            }
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v));
+            if (m) return new Date(+m[1], +m[2] - 1, +m[3]).getTime(); // fecha local, sin desfase UTC
+            const n = Date.parse(v);
+            return isNaN(n) ? null : n;
+        }
+
+        // dd/mm/aa ("-" si no hay fecha)
+        function formatoDia(ms) {
+            if (ms === null || ms === undefined) return '-';
+            const d = new Date(ms);
+            const p = n => String(n).padStart(2, '0');
+            return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)}`;
+        }
+
+        // Lee un movimiento del historial aunque venga con otro formato (número, nombre de columna, fecha en texto…)
+        function numColumna(v) {
+            if (v === null || v === undefined || v === '') return null;
+            const n = Number(v);
+            if (Number.isInteger(n) && n >= 1 && n <= 5) return n;
+            const s = String(v).trim().toLowerCase();
+            const i = cols.findIndex(x => x.toLowerCase() === s);
+            if (i >= 0) return i + 1;
+            const j = NOMBRES_COL_CORTOS.findIndex(x => x.toLowerCase() === s);
+            return j >= 0 ? j + 1 : null;
+        }
+
+        function normalizarMovimiento(m) {
+            const de = m.de ?? m.desde ?? m.origen ?? m.from;
+            const a = m.a ?? m.hasta ?? m.destino ?? m.to ?? m.columna;
+            return { de, a, nDe: numColumna(de), nA: numColumna(a), ms: aMs(m.fecha ?? m.fechaHora ?? m.timestamp ?? m.date) };
+        }
+
+        // Fecha del último cambio de columna hacia 'col' según el historial (null si no hay)
+        function ultimaEntradaEnColumna(c, col) {
+            const h = Array.isArray(c.historial) ? c.historial : [];
+            let mejor = null;
+            h.forEach(m => {
+                const n = normalizarMovimiento(m);
+                if (n.nA === col && n.ms !== null && (mejor === null || n.ms > mejor)) mejor = n.ms;
+            });
+            return mejor;
+        }
+
+        // Fecha con la que un coche archivado entra en los filtros año/mes y en el ocultado de meses anteriores:
+        // el día en que pasó a la columna 5. Solo si no existe ese dato (tarjetas antiguas) se usa la fecha de entrega.
+        function fechaReferenciaArchivo(c) {
+            return aMs(c.fechaArchivado) ?? ultimaEntradaEnColumna(c, 5) ?? aMs(c.fechaEntrega) ?? aMs(c.fechaEntradaIngreso);
+        }
+
+        const NOMBRES_COL_CORTOS = ["PDTE. PRESUP.", "PDTE. RECOGIDA", "EN TALLER", "ACABADO", "ARCHIVADO"];
+
+        // Días de calendario (enteros) entre dos fechas: mismo día = 0, ayer = 1…
+        function diasCalendario(desdeMs, hastaMs) {
+            const ini = ms => { const d = new Date(ms); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
+            return Math.max(0, Math.round((ini(hastaMs) - ini(desdeMs)) / MS_DIA));
+        }
+
+        function entradaTallerMs(c) {
+            const a = aMs(c.fechaEntradaTaller);
+            if (a !== null) return a;
+            return c.columna === 3 ? ultimaEntradaEnColumna(c, 3) : null; // tarjetas antiguas que ya estaban en la col 3
+        }
+
+        // Días enteros que la tarjeta está (o estuvo) en la columna 3 "en taller reparador".
+        // En col 3 cuenta hasta hoy; si ya salió, desde que entró hasta que pasó a la col 4.
+        // null si faltan fechas o fue un salto directo entre columnas (< 1 s).
+        function diasEnTaller(c) {
+            const a = entradaTallerMs(c);
+            if (a === null) return null;
+            if (c.columna === 3) return diasCalendario(a, Date.now());
+            const b = aMs(c.fechaEntregaTaller);
+            if (b === null || b - a < 1000) return null;
+            return diasCalendario(a, b);
+        }
+
+// Importes de un pagador: 'comp' (Cia. Aseguradora) o 'cli' (Cliente)
+        function importesPagador(c, p) {
+            return { venta: Number(c[p + 'Venta']) || 0, coste: Number(c[p + 'Coste']) || 0, recambios: Number(c[p + 'Recambios']) || 0 };
+        }
+
+        // Suma los importes de los pagadores marcados en el coche; filtroPagador: TODOS | COMPANIA | CLIENTE
+        function importesCoche(c, filtroPagador) {
+            const r = { venta: 0, coste: 0, recambios: 0 };
+            [['COMPANIA', 'comp', 'esCompania'], ['CLIENTE', 'cli', 'esCliente']].forEach(([clave, p, marca]) => {
+                if ((filtroPagador === 'TODOS' || filtroPagador === clave) && c[marca]) {
+                    const im = importesPagador(c, p);
+                    r.venta += im.venta; r.coste += im.coste; r.recambios += im.recambios;
+                }
+            });
+            return r;
+        }
+
+        function guardarDb(idDoc, datos) {
+            if (!db) return;
+            db.collection("vehiculos").doc(idDoc).update(datos).catch(err => {
+                console.error("Error al guardar:", err);
+                alert("No se pudo guardar en la base de datos. Revisa la conexión.");
+            });
+        }
 
         try {
             if (typeof firebase !== 'undefined') {
@@ -701,10 +834,10 @@
         }
 
         const cols = [
-            "Pendiente Presupuesto/peritacion", 
-            "pendiente de recogida", 
-            "en taller reparador", 
-            "acabado / pdte facturar", 
+            "Pendiente Presupuesto/peritacion",
+            "pendiente de recogida",
+            "en taller reparador",
+            "acabado / pdte facturar",
             "archivado"
         ];
 
@@ -714,7 +847,7 @@
                 modal.style.display = 'flex';
             } else {
                 modal.style.display = 'none';
-                document.getElementById('user-role-text').innerText = (usuarioActual === 'ADMIN') ? '👑 TÚ (ADMIN)' : `🏢 ${usuarioActual.toUpperCase()}`;
+                document.getElementById('user-role-text').innerText = (soyAdmin()) ? '👑 TÚ (ADMIN)' : `🏢 ${usuarioActual.toUpperCase()}`;
                 aplicarPermisosRol();
                 escucharFirebase();
             }
@@ -743,21 +876,18 @@
             location.reload();
         }
 
+const COLORES_TALLER = { 'APV Cars': ['#00d2ff', '#002233'], 'Auto Bros': ['#10b981', '#022c22'] };
+
         function actualizarColorSelectTaller() {
-            const selectElem = document.getElementById('f-taller');
-            if (!selectElem) return;
-            const val = selectElem.value;
-            if (val === 'APV Cars') {
-                selectElem.style.setProperty('background-color', '#00d2ff', 'important');
-                selectElem.style.setProperty('color', '#002233', 'important');
-            } else if (val === 'Auto Bros') {
-                selectElem.style.setProperty('background-color', '#10b981', 'important');
-                selectElem.style.setProperty('color', '#022c22', 'important');
-            }
+            const sel = document.getElementById('f-taller');
+            const color = COLORES_TALLER[sel.value];
+            if (!color) return;
+            sel.style.setProperty('background-color', color[0], 'important');
+            sel.style.setProperty('color', color[1], 'important');
         }
 
         function aplicarPermisosRol() {
-            const esAdmin = (usuarioActual === 'ADMIN');
+            const esAdmin = (soyAdmin());
             const selectorFiltro = document.getElementById('filtro-taller');
             const formCrear = document.getElementById('p-form-container');
             const btnToggleStats = document.getElementById('btn-toggle-stats-btn');
@@ -771,7 +901,7 @@
                 statsPanel.style.display = 'none';
             } else {
                 selectorFiltro.disabled = false;
-                formCrear.style.display = 'flex'; 
+                formCrear.style.display = 'flex';
                 btnToggleStats.style.display = 'flex';
                 statsPanel.style.display = estadisticasVisibles ? 'block' : 'none';
                 actualizarColorSelectTaller();
@@ -794,54 +924,49 @@
         }
 
         function escucharFirebase() {
-            if (!db) {
-                coches = [];
-                dibujar();
-                return;
-            }
+            if (!db) { alert('No se pudo conectar con Firebase. Recarga la página.'); return; }
 
             db.collection("vehiculos").onSnapshot((snapshot) => {
-                let tempCoches = [];
-                snapshot.forEach((doc) => {
-                    tempCoches.push({ idDoc: doc.id, ...doc.data() });
-                });
-
-                coches = tempCoches;
+                coches = [];
+                snapshot.forEach((doc) => coches.push({ idDoc: doc.id, ...doc.data() }));
                 dibujar();
             }, (err) => {
-                console.warn("Conexión Firebase no disponible:", err);
-                coches = [];
-                dibujar();
+                console.error("Error de lectura en Firestore:", err);
+                alert("No se pudo leer la base de datos. Revisa la conexión o las reglas de Firestore.");
             });
+        }
+
+        function actualizarBuscador() {
+            document.getElementById('btn-limpiar-buscador').classList.toggle('visible', document.getElementById('buscador').value !== '');
+            dibujar();
+        }
+
+        function limpiarBuscador() {
+            const b = document.getElementById('buscador');
+            b.value = '';
+            actualizarBuscador();
+            b.focus();
         }
 
         function chequearEnter(e) { if (e.key === 'Enter') agregarVehiculo(); }
 
-        function cambiarFechaEntrega(idDoc, event, inputElem) {
-            event.stopPropagation();
-            const nuevaFecha = inputElem.value;
-            const c = coches.find(x => x.idDoc === idDoc);
-            if(c) c.fechaEntrega = nuevaFecha;
-            if (db && usuarioActual === 'ADMIN') {
-                db.collection("vehiculos").doc(idDoc).update({ fechaEntrega: nuevaFecha });
-            }
+        function toggleArchivadosAnteriores() {
+            verArchivadosAnteriores = !verArchivadosAnteriores;
             dibujar();
         }
 
-        function cambiarFechaEntrada(idDoc, event, inputElem) {
+function cambiarFechaEntrega(idDoc, event, inputElem) {
             event.stopPropagation();
-            const nuevaFecha = inputElem.value;
             const c = coches.find(x => x.idDoc === idDoc);
-            if(c) c.fechaEntradaIngreso = nuevaFecha;
-            if (db && usuarioActual === 'ADMIN') {
-                db.collection("vehiculos").doc(idDoc).update({ fechaEntradaIngreso: nuevaFecha });
-            }
+            if (!c || !soyAdmin()) return;
+            c.fechaEntrega = inputElem.value;
+            guardarDb(idDoc, { fechaEntrega: c.fechaEntrega });
             dibujar();
         }
 
         /* --- DRAG AND DROP NATIVO --- */
         function alComenzarArrastre(e, idDoc) {
-            if (usuarioActual !== 'ADMIN') {
+            if (!soyAdmin()) {
                 e.preventDefault();
                 return;
             }
@@ -859,6 +984,7 @@
         }
 
         function salirColumna(e) {
+            if (e.currentTarget.contains(e.relatedTarget)) return;
             e.currentTarget.classList.remove('drag-over');
         }
 
@@ -875,7 +1001,7 @@
         function dibujar() {
             const buscadorElem = document.getElementById('buscador');
             const buscador = buscadorElem ? buscadorElem.value.toUpperCase() : '';
-            const esAdmin = (usuarioActual === 'ADMIN');
+            const esAdmin = (soyAdmin());
             const tallerFiltroElem = document.getElementById('filtro-taller');
             const tallerFiltro = esAdmin ? (tallerFiltroElem ? tallerFiltroElem.value : 'TODOS') : usuarioActual;
 
@@ -884,25 +1010,41 @@
                 const columnaDiv = document.getElementById(`col-${cNum}`);
                 if (!columnaDiv) return;
 
-                const filtrados = coches.filter(c => {
-                    let matchCol = (c.columna === cNum);
-                    let matchTaller = (tallerFiltro === "TODOS" || c.Taller === tallerFiltro);
-                    let matchTexto = (c.matricula.toUpperCase().includes(buscador) || c.modelo.toUpperCase().includes(buscador));
-                    return matchCol && matchTaller && matchTexto;
+                const coincidentes = coches.filter(c => {
+                    const mat = String(c.matricula || '').toUpperCase(), mod = String(c.modelo || '').toUpperCase();
+                    return c.columna === cNum
+                        && (tallerFiltro === "TODOS" || c.Taller === tallerFiltro)
+                        && (mat.includes(buscador) || mod.includes(buscador));
                 });
 
+                // Columna 5: se ocultan los archivados de meses anteriores (solo en pantalla; las estadísticas siguen usando todos).
+                // Si hay texto en el buscador se muestran todos, para poder encontrar una matrícula antigua.
+                let filtrados = coincidentes, ocultos = 0;
+                if (cNum === 5 && !verArchivadosAnteriores && !buscador) {
+                    const ahora = new Date();
+                    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).getTime();
+                    filtrados = coincidentes.filter(c => {
+                        const ms = fechaReferenciaArchivo(c);
+                        return ms === null || ms >= inicioMes;
+                    });
+                    ocultos = coincidentes.length - filtrados.length;
+                }
+
                 let colHtml = `<div class="col-titulo col-titulo-${cNum}"><span>${n.toUpperCase()}</span><span>${filtrados.length}</span></div>`;
+                if (cNum === 5 && (ocultos > 0 || verArchivadosAnteriores)) {
+                    colHtml += `<button type="button" class="btn-m" style="width:100%; margin-bottom:10px; padding:6px;" onclick="toggleArchivadosAnteriores()">${verArchivadosAnteriores ? '🙈 OCULTAR MESES ANTERIORES' : `📦 ${ocultos} DE MESES ANTERIORES OCULTOS · VER`}</button>`;
+                }
 
                 filtrados.forEach(c => {
                     const claseTaller = (c.Taller === "APV Cars") ? "t-apv" : "t-autobros";
-                    
+
                     const urg = c.urgente ? `<span class="badge-urgente">🚨 URGENTE</span>` : '';
-                    
-                    const badgeComp = c.esCompania ? `<span class="badge-pagador badge-compania">🏢 COMPAÑÍA</span>` : '';
+
+                    const badgeComp = c.esCompania ? `<span class="badge-pagador badge-compania">🏢 CIA. ASEGURADORA</span>` : '';
                     const badgeCli = c.esCliente ? `<span class="badge-pagador badge-cliente">👤 CLIENTE</span>` : '';
-                    
+
                     const pza = c.piezas && c.piezas.length > 0 ? `<span class="badge-piezas">🛠️ ${c.piezas.length} PZA</span>` : '';
-                    
+
                     const totalFotos = (c.fotos || []).filter(f => f.tipo === 'imagen' || typeof f === 'string').length;
                     const totalDocs = (c.fotos || []).filter(f => f.tipo === 'doc').length;
 
@@ -911,16 +1053,18 @@
 
                     let infoEconomica = '';
                     if (esAdmin) {
-                        const totalVentaPura = Number(c.compVenta || 0) + Number(c.cliVenta || 0);
-                        const totalCoste = Number(c.compCoste || 0) + Number(c.cliCoste || 0);
-                        const totalRecambios = Number(c.compRecambios || 0) + Number(c.cliRecambios || 0);
-                        
-                        if (totalVentaPura > 0 || totalCoste > 0 || totalRecambios > 0) {
+                        const im = importesCoche(c, 'TODOS');
+                        if (im.venta > 0 || im.coste > 0 || im.recambios > 0) {
                             infoEconomica = `<div style="font-size:9px; font-weight:700; color:#38bdf8; margin-top:3px; background:#181d22; padding:2px 4px; border-radius:3px; border:1px solid #334155;">
-                                💶 V.ZSUB: ${totalVentaPura.toFixed(0)}€ | Rec: ${totalRecambios.toFixed(0)}€ | C: ${totalCoste.toFixed(0)}€
+                                💶 V.ZSUB: ${im.venta.toFixed(0)}€ | Rec: ${im.recambios.toFixed(0)}€ | C: ${im.coste.toFixed(0)}€
                             </div>`;
                         }
                     }
+
+                    const diasTaller = (cNum === 3) ? diasEnTaller(c) : null;
+                    const badgeDias = diasTaller !== null
+                        ? `<div style="display:flex; justify-content:flex-end; margin-top:6px;"><span class="badge-dias" title="${diasTaller} día(s) en taller reparador">${diasTaller}</span></div>`
+                        : '';
 
                     let botonesAccion = '';
                     if (esAdmin) {
@@ -935,35 +1079,40 @@
                     }
 
                     colHtml += `
-                        <div class="tarjeta ${claseTaller}" 
-                             draggable="${esAdmin ? 'true' : 'false'}" 
-                             ondragstart="alComenzarArrastre(event, '${c.idDoc}')" 
+                        <div class="tarjeta ${claseTaller}"
+                             draggable="${esAdmin ? 'true' : 'false'}"
+                             ondragstart="alComenzarArrastre(event, '${c.idDoc}')"
                              ondragend="alTerminarArrastre(event)"
-                             onclick="abrirChecklist('${c.idDoc}', event)">
+                             onclick="abrirChecklist('${c.idDoc}')">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
-                                <span class="badge-taller">${c.Taller.toUpperCase()}</span>
+                                <span class="badge-taller">${esc(String(c.Taller || '').toUpperCase())}</span>
                                 <div style="text-align: right;">
-                                    <div style="font-size: 14px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; margin-bottom: 2px;">${c.matricula.toUpperCase()}</div>
-                                    <div style="font-size: 12px; font-weight: 500; color: #cbd5e1; letter-spacing: 0.3px;">${c.modelo.toUpperCase()}</div>
+                                    <div style="font-size: 14px; font-weight: 700; color: #ffffff; letter-spacing: 0.5px; margin-bottom: 2px;">${esc(String(c.matricula || '').toUpperCase())}</div>
+                                    <div style="font-size: 12px; font-weight: 500; color: #cbd5e1; letter-spacing: 0.3px;">${esc(String(c.modelo || '').toUpperCase())}</div>
+                                    ${badgeDias}
                                 </div>
                             </div>
                             <div style="display:flex; gap:4px; margin-top:2px; flex-wrap:wrap;">
                                 ${urg} ${badgeComp} ${badgeCli}
                             </div>
                             ${infoEconomica}
-                            
+
                             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;" onclick="event.stopPropagation()">
-                                <div class="badge-fecha-editable">
-                                    <span>ENTRADA:</span>
-                                    <input type="date" value="${c.fechaEntradaIngreso || ''}" onchange="cambiarFechaEntrada('${c.idDoc}', event, this)" ${!esAdmin ? 'disabled' : ''}>
+                                <div class="badge-fecha-fija">
+                                    <span>CREACIÓN:</span>
+                                    <span class="valor">${formatoDia(aMs(c.fechaIngreso))}</span>
+                                </div>
+                                <div class="badge-fecha-fija">
+                                    <span>ENTRADA TALLER:</span>
+                                    <span class="valor">${formatoDia(entradaTallerMs(c))}</span>
                                 </div>
                                 <div class="badge-fecha-editable">
-                                    <span>ENTREGA:</span>
+                                    <span>ENTREGA EST.:</span>
                                     <input type="date" value="${c.fechaEntrega || ''}" onchange="cambiarFechaEntrega('${c.idDoc}', event, this)" ${!esAdmin ? 'disabled' : ''}>
                                 </div>
                             </div>
 
-                            ${c.textoLibre ? `<div style="font-style: italic; color: #cbd5e1; margin-top: 3px; font-size: 9px;">💬 ${c.textoLibre.toUpperCase()}</div>` : ''}
+                            ${c.textoLibre ? `<div style="font-style: italic; color: #cbd5e1; margin-top: 3px; font-size: 9px;">💬 ${esc(String(c.textoLibre).toUpperCase())}</div>` : ''}
                             <div style="margin-top: 5px; display:flex; gap:4px;">${pza} ${fts} ${dcs}</div>
                             ${botonesAccion}
                         </div>`;
@@ -976,245 +1125,171 @@
             }
         }
 
-        /* --- ESTADÍSTICAS Y CÁLCULOS FINANCIEROS Y DE TIEMPOS DE REPARACIÓN --- */
+        /* --- ESTADÍSTICAS (EXCLUSIVO COLUMNA 5 - ARCHIVADOS) --- */
+        function poblarFiltroAnios() {
+            const sel = document.getElementById('stats-filtro-anio');
+            const previo = sel.value || 'TODOS';
+            const anios = new Set([new Date().getFullYear()]);
+            coches.filter(c => c.columna === 5).forEach(c => {
+                const ms = fechaReferenciaArchivo(c);
+                if (ms !== null) anios.add(new Date(ms).getFullYear());
+            });
+            const lista = [...anios].sort((a, b) => b - a);
+            sel.innerHTML = '<option value="TODOS">TODOS LOS AÑOS</option>' + lista.map(a => `<option value="${a}">${a}</option>`).join('');
+            sel.value = lista.map(String).includes(previo) ? previo : 'TODOS';
+        }
+
         function actualizarEstadisticasAdmin() {
-            if (usuarioActual !== 'ADMIN' || !estadisticasVisibles) return;
+            if (!soyAdmin() || !estadisticasVisibles) return;
 
-            const filtroTaller = document.getElementById('stats-filtro-taller').value;
-            const filtroPagador = document.getElementById('stats-filtro-pagador').value;
-            const filtroMes = document.getElementById('stats-filtro-mes').value;
-            const filtroAno = document.getElementById('stats-filtro-ano').value;
-            
-            // FILTRO ESTRICTO: Columna 5 + Taller + Pagador + Año + Mes basándose en la fecha de archivado (columna 5)
+            poblarFiltroAnios();
+            const fTaller = document.getElementById('stats-filtro-taller').value;
+            const fPag = document.getElementById('stats-filtro-pagador').value;
+            const fAnio = document.getElementById('stats-filtro-anio').value;
+            const fMes = document.getElementById('stats-filtro-mes').value;
+
             const cochesFiltrados = coches.filter(c => {
-                const esColumna5 = (c.columna === 5);
-                const matchTaller = (filtroTaller === 'TODOS' || c.Taller === filtroTaller);
-                
-                let matchPagador = true;
-                if (filtroPagador === 'COMPANIA') matchPagador = !!c.esCompania;
-                if (filtroPagador === 'CLIENTE') matchPagador = !!c.esCliente;
-
-                // Validación por la FECHA DE ARCHIVADO (c.fechaArchivadoISO o c.fechaArchivado o fechaRef)
-                let matchFecha = true;
-                let fechaRef = c.fechaArchivadoISO;
-
-                if (!fechaRef && c.fechaArchivado) {
-                    fechaRef = new Date(c.fechaArchivado).toISOString().split('T')[0];
+                if (c.columna !== 5) return false;
+                if (fTaller !== 'TODOS' && c.Taller !== fTaller) return false;
+                if (fPag === 'COMPANIA' && !c.esCompania) return false;
+                if (fPag === 'CLIENTE' && !c.esCliente) return false;
+                if (fAnio !== 'TODOS' || fMes !== 'TODOS') {
+                    const ms = fechaReferenciaArchivo(c);
+                    if (ms === null) return false;
+                    const d = new Date(ms);
+                    if (fAnio !== 'TODOS' && d.getFullYear() !== Number(fAnio)) return false;
+                    if (fMes !== 'TODOS' && d.getMonth() !== Number(fMes)) return false;
                 }
-                if (!fechaRef) {
-                    fechaRef = c.fechaEntradaIngreso || c.fechaEntrega;
-                }
-
-                if (fechaRef) {
-                    const partesFecha = fechaRef.split('-');
-                    const anioCoche = partesFecha[0];
-                    const mesCoche = String(parseInt(partesFecha[1], 10) - 1); // 0 = Enero, 11 = Diciembre
-
-                    if (filtroAno !== 'TODOS' && anioCoche !== filtroAno) {
-                        matchFecha = false;
-                    }
-                    if (filtroMes !== 'TODOS' && mesCoche !== filtroMes) {
-                        matchFecha = false;
-                    }
-                } else {
-                    if (filtroMes !== 'TODOS' || filtroAno !== 'TODOS') {
-                        matchFecha = false;
-                    }
-                }
-
-                return esColumna5 && matchTaller && matchPagador && matchFecha;
+                return true;
             });
 
-            let totalVentaZsub = 0, totalCosteZsub = 0, totalRecambiosVenta = 0;
-            let countCompania = 0, countCliente = 0;
-            let duracionTotalDias = 0;
-            let contConTiempoReparacion = 0;
-
+            let venta = 0, coste = 0, recambios = 0, nComp = 0, nCli = 0;
             cochesFiltrados.forEach(c => {
-                if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') {
-                    if (c.esCompania) {
-                        totalVentaZsub += Number(c.compVenta || 0);
-                        totalCosteZsub += Number(c.compCoste || 0);
-                        totalRecambiosVenta += Number(c.compRecambios || 0);
-                    }
-                }
-                if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') {
-                    if (c.esCliente) {
-                        totalVentaZsub += Number(c.cliVenta || 0);
-                        totalCosteZsub += Number(c.cliCoste || 0);
-                        totalRecambiosVenta += Number(c.cliRecambios || 0);
-                    }
-                }
-
-                if (c.esCompania) countCompania++;
-                if (c.esCliente) countCliente++;
-
-                // Cálculo del tiempo de reparación estrictamente en DÍAS (Columna 3 -> Columna 4 o Columna 5)
-                const inicioRep = c.fechaEntradaTaller;
-                const finRep = c.fechaFinReparacion || c.fechaEntregaTaller || c.fechaArchivado;
-                if (inicioRep && finRep && finRep >= inicioRep) {
-                    const dias = (finRep - inicioRep) / (1000 * 60 * 60 * 24);
-                    duracionTotalDias += dias;
-                    contConTiempoReparacion++;
-                }
+                const im = importesCoche(c, fPag);
+                venta += im.venta; coste += im.coste; recambios += im.recambios;
+                if (c.esCompania) nComp++;
+                if (c.esCliente) nCli++;
             });
 
-            const beneficio = totalVentaZsub - totalCosteZsub;
-            const porcBeneficio = totalVentaZsub > 0 ? (beneficio / totalVentaZsub) * 100 : 0;
-            const margenRecambio = totalRecambiosVenta * 0.25;
+            const beneficio = venta - coste;
+            const porc = venta > 0 ? (beneficio / venta) * 100 : 0;
+            const eur = n => n.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
 
-            // Formatear Tiempo Medio de Reparación ESTRICTAMENTE EN DÍAS CON 1 DECIMAL
-            let textoTiempoMedio = "-";
-            if (contConTiempoReparacion > 0) {
-                const promedioDias = (duracionTotalDias / contConTiempoReparacion).toFixed(1);
-                textoTiempoMedio = `${promedioDias} DÍAS`;
+            // Tiempo medio: solo coches con entrada (col 3) y salida (col 4) válidas
+            const duraciones = cochesFiltrados.map(diasEnTaller).filter(d => d !== null);
+            let txtTiempo = '-';
+            if (duraciones.length) {
+                const dias = duraciones.reduce((a, b) => a + b, 0) / duraciones.length;
+                txtTiempo = `${dias.toFixed(1).replace('.', ',')} días`;
             }
 
             document.getElementById('st-total-coches').innerText = cochesFiltrados.length;
-            document.getElementById('st-tiempo-medio').innerText = textoTiempoMedio;
-            document.getElementById('st-total-venta').innerText = totalVentaZsub.toLocaleString('es-ES', { minimumFractionDigits: 0 }) + ' €';
-            document.getElementById('st-total-coste').innerText = totalCosteZsub.toLocaleString('es-ES', { minimumFractionDigits: 0 }) + ' €';
-            document.getElementById('st-total-recambios').innerText = totalRecambiosVenta.toLocaleString('es-ES', { minimumFractionDigits: 0 }) + ' €';
-            document.getElementById('st-beneficio').innerText = beneficio.toLocaleString('es-ES', { minimumFractionDigits: 0 }) + ' €';
-            document.getElementById('st-porc-beneficio').innerText = porcBeneficio.toFixed(1) + ' %';
-            document.getElementById('st-margen-recambio').innerText = margenRecambio.toLocaleString('es-ES', { minimumFractionDigits: 0 }) + ' €';
-            document.getElementById('st-pagador-ratio').innerText = `${countCompania} COMP | ${countCliente} CLI`;
+            document.getElementById('st-tiempo-medio').innerText = txtTiempo;
+            document.getElementById('st-tiempo-sub').innerText = `Col 3 a Col 4 · ${duraciones.length} de ${cochesFiltrados.length} coches`;
+            document.getElementById('st-total-venta').innerText = eur(venta);
+            document.getElementById('st-total-coste').innerText = eur(coste);
+            document.getElementById('st-total-recambios').innerText = eur(recambios);
+            document.getElementById('st-beneficio').innerText = eur(beneficio);
+            document.getElementById('st-porc-beneficio').innerText = porc.toFixed(1) + ' %';
+            document.getElementById('st-margen-recambio').innerText = eur(recambios * MARGEN_RECAMBIO);
+            document.getElementById('st-pagador-ratio').innerHTML = `${nComp} CIA. ASEGURADORA<br>${nCli} CLIENTE`;
 
-            renderGraficosAdmin(filtroTaller, filtroPagador, cochesFiltrados);
+            renderGraficosAdmin(fTaller, fPag, cochesFiltrados);
         }
 
-        function renderGraficosAdmin(filtroTaller, filtroPagador, cochesFiltrados) {
-            let labelsGrafico = [];
-            let ventaPorTaller = [];
-            let costePorTaller = [];
-            let recambiosPorTaller = [];
-
-            const tituloGrafico1 = document.getElementById('chart-title-1');
-
-            if (filtroTaller === 'TODOS') {
-                tituloGrafico1.innerText = "Comparativa de Importes por Taller (€)";
-                labelsGrafico = ['APV CARS', 'AUTO BROS'];
-                const talleres = ['APV Cars', 'Auto Bros'];
-                
-                ventaPorTaller = talleres.map(t => {
-                    let val = cochesFiltrados.filter(c => c.Taller === t).reduce((acc, c) => {
-                        let v = 0;
-                        if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) v += Number(c.compVenta || 0); }
-                        if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) v += Number(c.cliVenta || 0); }
-                        return acc + v;
-                    }, 0);
-                    return val > 0 ? val : null;
+        // Plugin propio: dibuja siempre los importes sobre las barras y dentro de los sectores
+        const pluginImportesVisibles = {
+            id: 'importesVisibles',
+            afterDatasetsDraw(chart) {
+                const ctx = chart.ctx;
+                const fmt = n => n.toLocaleString('es-ES', { maximumFractionDigits: 0 }) + ' €';
+                ctx.save();
+                ctx.font = 'bold 10px system-ui, sans-serif';
+                ctx.textAlign = 'center';
+                chart.data.datasets.forEach((ds, i) => {
+                    const meta = chart.getDatasetMeta(i);
+                    if (meta.hidden) return;
+                    meta.data.forEach((el, idx) => {
+                        const v = Number(ds.data[idx]);
+                        if (!v) return;
+                        if (chart.config.type === 'doughnut') {
+                            const pos = el.tooltipPosition();
+                            ctx.fillStyle = '#ffffff';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(fmt(v), pos.x, pos.y);
+                        } else {
+                            ctx.fillStyle = '#e2e8f0';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillText(fmt(v), el.x, el.y - 3);
+                        }
+                    });
                 });
-
-                costePorTaller = talleres.map(t => {
-                    let val = cochesFiltrados.filter(c => c.Taller === t).reduce((acc, c) => {
-                        let co = 0;
-                        if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) co += Number(c.compCoste || 0); }
-                        if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) co += Number(c.cliCoste || 0); }
-                        return acc + co;
-                    }, 0);
-                    return val > 0 ? val : null;
-                });
-
-                recambiosPorTaller = talleres.map(t => {
-                    let val = cochesFiltrados.filter(c => c.Taller === t).reduce((acc, c) => {
-                        let r = 0;
-                        if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) r += Number(c.compRecambios || 0); }
-                        if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) r += Number(c.cliRecambios || 0); }
-                        return acc + r;
-                    }, 0);
-                    return val > 0 ? val : null;
-                });
-            } else {
-                tituloGrafico1.innerText = `Importes Totales - ${filtroTaller.toUpperCase()} (€)`;
-                labelsGrafico = [filtroTaller.toUpperCase()];
-                
-                const vTaller = cochesFiltrados.reduce((acc, c) => {
-                    let v = 0;
-                    if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) v += Number(c.compVenta || 0); }
-                    if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) v += Number(c.cliVenta || 0); }
-                    return acc + v;
-                }, 0);
-
-                const cTaller = cochesFiltrados.reduce((acc, c) => {
-                    let co = 0;
-                    if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) co += Number(c.compCoste || 0); }
-                    if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) co += Number(c.cliCoste || 0); }
-                    return acc + co;
-                }, 0);
-
-                const rTaller = cochesFiltrados.reduce((acc, c) => {
-                    let r = 0;
-                    if (filtroPagador === 'TODOS' || filtroPagador === 'COMPANIA') { if (c.esCompania) r += Number(c.compRecambios || 0); }
-                    if (filtroPagador === 'TODOS' || filtroPagador === 'CLIENTE') { if (c.esCliente) r += Number(c.cliRecambios || 0); }
-                    return acc + r;
-                }, 0);
-
-                ventaPorTaller = [vTaller > 0 ? vTaller : null];
-                costePorTaller = [cTaller > 0 ? cTaller : null];
-                recambiosPorTaller = [rTaller > 0 ? rTaller : null];
+                ctx.restore();
             }
+        };
 
-            const ctx1 = document.getElementById('chart-importes-taller').getContext('2d');
+        function renderGraficosAdmin(fTaller, fPag, cochesFiltrados) {
+            if (typeof Chart === 'undefined') return;
+            const talleres = fTaller === 'TODOS' ? ['APV Cars', 'Auto Bros'] : [fTaller];
+            document.getElementById('chart-title-1').innerText = fTaller === 'TODOS'
+                ? "Comparativa de Importes por Taller (€)"
+                : `Importes Totales - ${fTaller.toUpperCase()} (€)`;
+
+            const sumar = (t, k) => cochesFiltrados.filter(c => c.Taller === t).reduce((a, c) => a + importesCoche(c, fPag)[k], 0);
+
             if (chartImportesInstance) chartImportesInstance.destroy();
-
-            chartImportesInstance = new Chart(ctx1, {
+            chartImportesInstance = new Chart(document.getElementById('chart-importes-taller').getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels: labelsGrafico,
+                    labels: talleres.map(t => t.toUpperCase()),
                     datasets: [
-                        { label: 'Ventas ZSUB (€)', data: ventaPorTaller, backgroundColor: '#10b981' },
-                        { label: 'Costes ZSUB (€)', data: costePorTaller, backgroundColor: '#f87171' },
-                        { label: 'Venta Recambios (€)', data: recambiosPorTaller, backgroundColor: '#fbbf24' }
+                        { label: 'Ventas ZSUB (€)', data: talleres.map(t => sumar(t, 'venta')), backgroundColor: '#10b981' },
+                        { label: 'Costes ZSUB (€)', data: talleres.map(t => sumar(t, 'coste')), backgroundColor: '#f87171' },
+                        { label: 'Venta Recambios (€)', data: talleres.map(t => sumar(t, 'recambios')), backgroundColor: '#fbbf24' }
                     ]
                 },
+                plugins: [pluginImportesVisibles],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 10 } } } },
+                    plugins: { tooltip: { enabled: false }, legend: { labels: { color: '#cbd5e1', font: { size: 10 } } } },
                     scales: {
                         x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
-                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                        y: { grace: '12%', ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
                     }
                 }
             });
 
-            const ventaCompaTotal = cochesFiltrados.reduce((acc, c) => acc + (c.esCompania ? Number(c.compVenta || 0) : 0), 0);
-            const ventaClienteTotal = cochesFiltrados.reduce((acc, c) => acc + (c.esCliente ? Number(c.cliVenta || 0) : 0), 0);
+            const ventaComp = fPag === 'CLIENTE' ? 0 : cochesFiltrados.reduce((a, c) => a + (c.esCompania ? importesPagador(c, 'comp').venta : 0), 0);
+            const ventaCli = fPag === 'COMPANIA' ? 0 : cochesFiltrados.reduce((a, c) => a + (c.esCliente ? importesPagador(c, 'cli').venta : 0), 0);
 
-            const datosRosquilla = [
-                ventaCompaTotal > 0 ? ventaCompaTotal : null,
-                ventaClienteTotal > 0 ? ventaClienteTotal : null
-            ];
-
-            const ctx2 = document.getElementById('chart-pagador').getContext('2d');
             if (chartPagadorInstance) chartPagadorInstance.destroy();
-
-            chartPagadorInstance = new Chart(ctx2, {
+            chartPagadorInstance = new Chart(document.getElementById('chart-pagador').getContext('2d'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Ventas ZSUB Compañía (€)', 'Ventas ZSUB Cliente (€)'],
+                    labels: ['Ventas ZSUB Cia. Aseguradora (€)', 'Ventas ZSUB Cliente (€)'],
                     datasets: [{
-                        data: datosRosquilla,
+                        data: [ventaComp > 0 ? ventaComp : null, ventaCli > 0 ? ventaCli : null],
                         backgroundColor: ['#3b82f6', '#eab308'],
                         borderWidth: 1,
                         borderColor: '#272d34'
                     }]
                 },
+                plugins: [pluginImportesVisibles],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } } }
+                    plugins: { tooltip: { enabled: false }, legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 } } } }
                 }
             });
         }
 
-        function abrirChecklist(idDoc, event) {
+        function abrirChecklist(idDoc) {
             cocheIdActual = idDoc;
             const c = coches.find(x => x.idDoc === idDoc);
             if(!c) return;
 
-            const esAdmin = (usuarioActual === 'ADMIN');
+            const esAdmin = (soyAdmin());
             const modalContent = document.querySelector('.modal-content');
             modalContent.classList.remove('m-apv', 'm-autobros');
             const tituloElem = document.getElementById('modal-titulo');
@@ -1227,23 +1302,20 @@
             } else {
                 tituloElem.style.color = '#38bdf8';
             }
-            tituloElem.innerText = `LISTA DE CONTROL [${c.Taller.toUpperCase()}] - ${c.matricula.toUpperCase()} (${c.modelo.toUpperCase()})`;
+            const up = v => String(v || '').toUpperCase();
+            tituloElem.innerText = `LISTA DE CONTROL [${up(c.Taller)}] - ${up(c.matricula)} (${up(c.modelo)})`;
             document.getElementById('modal-urgente').checked = !!c.urgente;
             document.getElementById('modal-vehiculo-completo').checked = false;
 
             const secAdmin = document.getElementById('modal-seccion-admin');
             if (esAdmin) {
                 secAdmin.style.display = 'block';
-                
-                document.getElementById('modal-chk-compania').checked = !!c.esCompania;
-                document.getElementById('modal-comp-venta').value = c.compVenta || '';
-                document.getElementById('modal-comp-coste').value = c.compCoste || '';
-                document.getElementById('modal-comp-recambios').value = c.compRecambios || '';
 
+                document.getElementById('modal-chk-compania').checked = !!c.esCompania;
                 document.getElementById('modal-chk-cliente').checked = !!c.esCliente;
-                document.getElementById('modal-cli-venta').value = c.cliVenta || '';
-                document.getElementById('modal-cli-coste').value = c.cliCoste || '';
-                document.getElementById('modal-cli-recambios').value = c.cliRecambios || '';
+                ['comp', 'cli'].forEach(p => ['Venta', 'Coste', 'Recambios'].forEach(k => {
+                    document.getElementById(`modal-${p}-${k.toLowerCase()}`).value = c[p + k] || '';
+                }));
             } else {
                 secAdmin.style.display = 'none';
             }
@@ -1253,7 +1325,7 @@
             });
 
             document.getElementById('modal-texto-libre').value = (c.textoLibre || '').toUpperCase();
-            
+
             fotosTemporales = (c.fotos || []).map(f => {
                 if (typeof f === 'string') return { tipo: 'imagen', data: f, nombre: 'Foto' };
                 return f;
@@ -1266,21 +1338,21 @@
         }
 
         function toggleColumnaCheck(master, lado) {
-            if (usuarioActual !== 'ADMIN') return;
+            if (!soyAdmin()) return;
             document.querySelectorAll(`.chk-${lado}`).forEach(chk => chk.checked = master.checked);
         }
 
         function toggleVehiculoCompleto(master) {
-            if (usuarioActual !== 'ADMIN') return;
+            if (!soyAdmin()) return;
             document.querySelectorAll('.chk-pieza').forEach(chk => chk.checked = master.checked);
         }
 
         function permitirSoltar(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragover'); }
         function salirZona(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('dragover'); }
-        function soltarArchivos(e) { 
-            e.preventDefault(); 
+        function soltarArchivos(e) {
+            e.preventDefault();
             document.getElementById('drop-zone').classList.remove('dragover');
-            procesarArchivosFotos(e.dataTransfer.files); 
+            procesarArchivosFotos(e.dataTransfer.files);
         }
 
         function manejarSubidaArchivos(e) {
@@ -1288,32 +1360,60 @@
             e.target.value = '';
         }
 
-        function procesarArchivosFotos(archivos) {
-            if(!archivos) return;
-            Array.from(archivos).forEach(archivo => {
-                const lector = new FileReader();
-                const esImagen = archivo.type.startsWith('image/');
-
-                lector.onload = function(evt) {
-                    fotosTemporales.push({
-                        tipo: esImagen ? 'imagen' : 'doc',
-                        nombre: archivo.name,
-                        data: evt.target.result
-                    });
-                    actualizarGaleriaPreview();
-                };
-
-                lector.readAsDataURL(archivo);
+        function leerComoDataURL(archivo) {
+            return new Promise((res, rej) => {
+                const l = new FileReader();
+                l.onload = () => res(l.result);
+                l.onerror = () => rej(l.error);
+                l.readAsDataURL(archivo);
             });
+        }
+
+        // Reduce la foto (máx. 1280 px, JPEG 70%) para que quepa en el documento de Firestore
+        function comprimirImagen(archivo) {
+            return new Promise((res, rej) => {
+                const url = URL.createObjectURL(archivo);
+                const img = new Image();
+                img.onload = () => {
+                    const k = Math.min(1, 1280 / Math.max(img.width, img.height));
+                    const cv = document.createElement('canvas');
+                    cv.width = Math.round(img.width * k);
+                    cv.height = Math.round(img.height * k);
+                    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+                    URL.revokeObjectURL(url);
+                    res(cv.toDataURL('image/jpeg', 0.7));
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Imagen no válida')); };
+                img.src = url;
+            });
+        }
+
+        async function procesarArchivosFotos(archivos) {
+            if (!archivos) return;
+            const lista = Array.from(archivos);
+            for (const archivo of lista) {
+                try {
+                    const esImagen = archivo.type.startsWith('image/');
+                    if (!esImagen && archivo.size > 600000) {
+                        alert(`"${archivo.name}" pesa demasiado (máximo 600 KB para documentos).`);
+                        continue;
+                    }
+                    const data = esImagen ? await comprimirImagen(archivo) : await leerComoDataURL(archivo);
+                    fotosTemporales.push({ tipo: esImagen ? 'imagen' : 'doc', nombre: archivo.name, data });
+                    actualizarGaleriaPreview();
+                } catch (e) {
+                    alert(`No se pudo leer "${archivo.name}".`);
+                }
+            }
         }
 
         function actualizarGaleriaPreview() {
             const cont = document.getElementById('galeria-preview');
             cont.innerHTML = '';
             fotosTemporales.forEach((adj, index) => {
-                const esImg = adj.tipo === 'imagen' || typeof adj === 'string';
-                const srcData = typeof adj === 'string' ? adj : adj.data;
-                const nombre = adj.nombre || `Adjunto ${index+1}`;
+                const esImg = adj.tipo === 'imagen';
+                const srcData = adj.data;
+                const nombre = esc(adj.nombre || `Adjunto ${index+1}`);
 
                 if (esImg) {
                     cont.innerHTML += `
@@ -1337,7 +1437,7 @@
         function abrirVisorFoto(e, index) {
             e.stopPropagation();
             const item = fotosTemporales[index];
-            const src = typeof item === 'string' ? item : item.data;
+            const src = item.data;
             document.getElementById('visor-foto-img').src = src;
             document.getElementById('visor-foto').classList.add('visible');
         }
@@ -1363,8 +1463,8 @@
             const c = coches.find(x => x.idDoc === cocheIdActual);
             if(!c) return;
 
-            const esAdmin = (usuarioActual === 'ADMIN');
-            let datosActualizar = {
+            const esAdmin = (soyAdmin());
+            const datosActualizar = {
                 textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
                 fotos: [...fotosTemporales],
                 fechaUltimaModificacion: Date.now()
@@ -1375,68 +1475,67 @@
                 document.querySelectorAll('.chk-pieza:checked').forEach(chk => seleccionadas.push(chk.value));
                 datosActualizar.piezas = seleccionadas;
                 datosActualizar.urgente = document.getElementById('modal-urgente').checked;
-                
-                datosActualizar.esCompania = document.getElementById('modal-chk-compania').checked;
-                datosActualizar.compVenta = parseFloat(document.getElementById('modal-comp-venta').value) || 0;
-                datosActualizar.compCoste = parseFloat(document.getElementById('modal-comp-coste').value) || 0;
-                datosActualizar.compRecambios = parseFloat(document.getElementById('modal-comp-recambios').value) || 0;
 
+                datosActualizar.esCompania = document.getElementById('modal-chk-compania').checked;
                 datosActualizar.esCliente = document.getElementById('modal-chk-cliente').checked;
-                datosActualizar.cliVenta = parseFloat(document.getElementById('modal-cli-venta').value) || 0;
-                datosActualizar.cliCoste = parseFloat(document.getElementById('modal-cli-coste').value) || 0;
-                datosActualizar.cliRecambios = parseFloat(document.getElementById('modal-cli-recambios').value) || 0;
+                ['comp', 'cli'].forEach(p => ['Venta', 'Coste', 'Recambios'].forEach(k => {
+                    datosActualizar[p + k] = parseFloat(document.getElementById(`modal-${p}-${k.toLowerCase()}`).value) || 0;
+                }));
+            }
+
+            const peso = JSON.stringify(datosActualizar.fotos).length;
+            if (peso > LIMITE_ADJUNTOS_BYTES) {
+                alert(`Los adjuntos pesan demasiado (${Math.round(peso / 1024)} KB, máximo ${Math.round(LIMITE_ADJUNTOS_BYTES / 1024)} KB). Elimina alguno.`);
+                return;
             }
 
             Object.assign(c, datosActualizar);
-            if (db) db.collection("vehiculos").doc(cocheIdActual).update(datosActualizar);
-            
+            guardarDb(cocheIdActual, datosActualizar);
+
             dibujar();
             cerrarModal();
         }
 
         function mover(idDoc, nCol) {
-            if (usuarioActual !== 'ADMIN') return;
+            if (!soyAdmin()) return;
             const c = coches.find(x => x.idDoc === idDoc);
-            if (!c) return;
+            if (!c || c.columna === nCol) return;
 
+            const antes = c.columna;
             const ahora = Date.now();
-            const hoyISO = new Date(ahora).toISOString().split('T')[0];
-            let cambios = { columna: nCol };
+            const cambios = { columna: nCol };
 
-            // Marca de inicio de reparación cuando se mueve a Columna 3 ("en taller reparador")
-            if (nCol === 3 && !c.fechaEntradaTaller) {
-                cambios.fechaEntradaTaller = ahora;
-                if (!c.fechaEntradaIngreso) cambios.fechaEntradaIngreso = hoyISO;
-            }
-
-            // Marca de fin de reparación cuando se mueve a Columna 4 ("acabado / pdte facturar") o superior
-            if (nCol >= 4 && !c.fechaFinReparacion) {
-                cambios.fechaFinReparacion = ahora;
+            if (nCol < 3) {
+                // Vuelve a antes del taller: se reinicia el cronómetro de reparación
+                cambios.fechaEntradaTaller = null;
+                cambios.fechaEntregaTaller = null;
+            } else if (nCol === 3) {
+                if (antes < 3 || !aMs(c.fechaEntradaTaller)) cambios.fechaEntradaTaller = ahora;
+                cambios.fechaEntregaTaller = null;
+            } else if (antes < 4 || !aMs(c.fechaEntregaTaller)) {
+                // Col 4 o 5: se cierra el tiempo de reparación (si venía saltando la col 3 no hay entrada y no cuenta en la media)
                 cambios.fechaEntregaTaller = ahora;
             }
 
-            // Marca de archivado cuando pasa a Columna 5 ("archivado")
-            if (nCol === 5) {
-                cambios.fechaArchivado = ahora;
-                cambios.fechaArchivadoISO = hoyISO;
-            }
+            cambios.fechaArchivado = (nCol === 5) ? ahora : null;
+            cambios.historial = [...(Array.isArray(c.historial) ? c.historial : []), { de: antes, a: nCol, fecha: ahora }];
 
             Object.assign(c, cambios);
-            if (db) db.collection("vehiculos").doc(idDoc).update(cambios);
+            guardarDb(idDoc, cambios);
             dibujar();
         }
 
         function borrar(idDoc) {
-            if (usuarioActual !== 'ADMIN') return;
+            if (!soyAdmin()) return;
             if(confirm("¿ELIMINAR ESTE VEHÍCULO DEFINITIVAMENTE?")) {
                 coches = coches.filter(x => x.idDoc !== idDoc);
-                if (db) db.collection("vehiculos").doc(idDoc).delete();
+                if (db) db.collection("vehiculos").doc(idDoc).delete().catch(err => { console.error(err); alert("No se pudo eliminar el vehículo. Revisa la conexión."); });
                 dibujar();
             }
         }
 
         function agregarVehiculo() {
-            if (usuarioActual !== 'ADMIN') return;
+            if (!soyAdmin()) return;
 
             const matInput = document.getElementById('f-mat');
             const modInput = document.getElementById('f-mod');
@@ -1445,13 +1544,11 @@
 
             const mat = matInput.value.trim().toUpperCase();
             if(!mat) { alert("¡ESCRIBE LA MATRÍCULA!"); matInput.focus(); return; }
-            
+
             const mod = modInput.value.trim().toUpperCase();
-            const hoyStr = new Date().toISOString().split('T')[0];
 
             const nuevoCoche = {
-                id: Date.now(),
-                fechaIngreso: Date.now(),
+                fechaIngreso: Date.now(), // F. creación (no editable)
                 Taller: tallerInput.value,
                 matricula: mat,
                 modelo: mod || "GENÉRICO",
@@ -1460,26 +1557,19 @@
                 compVenta: 0, compCoste: 0, compRecambios: 0,
                 cliVenta: 0, cliCoste: 0, cliRecambios: 0,
                 urgente: false,
-                fechaEntradaIngreso: fechaInput.value || hoyStr,
-                fechaEntrega: fechaInput.value || hoyStr,
+                fechaEntrega: fechaInput.value || '',
                 fechaEntradaTaller: null,
-                fechaFinReparacion: null,
                 fechaEntregaTaller: null,
                 fechaArchivado: null,
-                fechaArchivadoISO: null,
+                historial: [],
                 columna: 1,
                 piezas: [],
                 textoLibre: "",
                 fotos: []
             };
 
-            if (db) {
-                db.collection("vehiculos").add(nuevoCoche);
-            } else {
-                nuevoCoche.idDoc = "local-" + Date.now();
-                coches.push(nuevoCoche);
-                dibujar();
-            }
+            if (!db) { alert("Sin conexión con la base de datos."); return; }
+            db.collection("vehiculos").add(nuevoCoche).catch(err => { console.error(err); alert("No se pudo crear el vehículo. Revisa la conexión."); });
 
             matInput.value = '';
             modInput.value = '';
