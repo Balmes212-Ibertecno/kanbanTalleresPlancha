@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Taller - APV Cars & Auto Bros</title>
+    
+    <!-- ETIQUETA DEL ICONO / FAVICON -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
@@ -398,7 +402,8 @@
             <h2>🔐 Acceso al Taller</h2>
             <p>Selecciona tu perfil e introduce tu contraseña:</p>
             <select id="login-rol-select">
-                <option value="ADMIN">Tú / Administrador</option>
+                <option value="ADMIN">Tú / Administrador (Total)</option>
+                <option value="ADMIN_LECTURA">👁️ Administrador (Solo Lectura)</option>
                 <option value="APV Cars">Taller APV Cars</option>
                 <option value="Auto Bros">Taller Auto Bros</option>
             </select>
@@ -652,21 +657,21 @@
 
             <div style="margin-top: 10px;">
                 <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 3px;">📝 NOTAS / OBSERVACIONES LIBRES:</label>
-                <textarea id="modal-texto-libre" style="width: 100%; height: 50px; padding: 6px; border-radius: 4px; font-size: 11px; text-transform: uppercase;" placeholder="OBSERVACIONES..."></textarea>
+                <textarea id="modal-texto-libre" class="solo-admin" style="width: 100%; height: 50px; padding: 6px; border-radius: 4px; font-size: 11px; text-transform: uppercase;" placeholder="OBSERVACIONES..."></textarea>
             </div>
 
-            <div style="margin-top: 10px;">
+            <div style="margin-top: 10px;" id="seccion-adjuntar-archivos">
                 <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">📷 📁 ADJUNTAR FOTOS Y DOCUMENTOS (PDF, DOCX, TXT):</label>
                 <div id="drop-zone" class="drop-zone" ondragover="permitirSoltar(event)" ondragleave="salirZona(event)" ondrop="soltarArchivos(event)">
                     <p style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">📁 ARRASTRA ARCHIVOS O FOTOS AQUÍ O</p>
-                    <input type="file" id="input-fotos" accept="image/*,.pdf,.doc,.docx,.txt" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;">
+                    <input type="file" id="input-fotos" accept="image/*,.pdf,.doc,.docx,.txt" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;" class="solo-admin">
                     <div id="galeria-preview" class="galeria-adjuntos"></div>
                 </div>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px;">
-                <button onclick="cerrarModal()" style="background: #3b424a;">CANCELAR</button>
-                <button onclick="guardarChecklist()">GUARDAR CAMBIOS</button>
+                <button onclick="cerrarModal()" style="background: #3b424a;">CERRAR</button>
+                <button id="btn-guardar-modal" onclick="guardarChecklist()">GUARDAR CAMBIOS</button>
             </div>
         </div>
     </div>
@@ -689,6 +694,7 @@
 
         const CREDENCIALES = {
             "ADMIN": "admin2026",
+            "ADMIN_LECTURA": "lectura2026", // <--- NUEVA CONTRASEÑA SOLO LECTURA
             "APV Cars": "apv2026",
             "Auto Bros": "autobros2026"
         };
@@ -699,21 +705,26 @@
         let cocheIdActual = null;
         let fotosTemporales = [];
         let estadisticasVisibles = false;
-        let verArchivadosAnteriores = false; // columna 5: mostrar también los archivados de meses anteriores
+        let verArchivadosAnteriores = false;
 
         let chartImportesInstance = null;
         let chartPagadorInstance = null;
 
-        const MARGEN_RECAMBIO = 0.25; // 25% sobre la venta de recambios (ajustar aquí si cambia)
+        const MARGEN_RECAMBIO = 0.25;
         const MS_DIA = 86400000;
+        
+        // VISTA ADMIN: ADMIN total o ADMIN lectura
+        const esPerfilAdmin = () => usuarioActual === 'ADMIN' || usuarioActual === 'ADMIN_LECTURA';
+        
+        // ESCRITURA ADMIN: Solo el ADMIN total puede modificar
         const soyAdmin = () => usuarioActual === 'ADMIN';
-        const LIMITE_ADJUNTOS_BYTES = 900000; // Firestore limita cada documento a ~1 MiB
+
+        const LIMITE_ADJUNTOS_BYTES = 900000;
 
         function esc(s) {
             return String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
         }
 
-        // Convierte número, Timestamp de Firestore, Date o texto (YYYY-MM-DD / ISO) en milisegundos; null si no es válido
         function aMs(v) {
             if (v === null || v === undefined || v === '') return null;
             if (typeof v === 'number') return isFinite(v) ? v : null;
@@ -725,12 +736,11 @@
                 return new Date(y, +f[2] - 1, +f[1], +(f[4] || 0), +(f[5] || 0)).getTime();
             }
             const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v));
-            if (m) return new Date(+m[1], +m[2] - 1, +m[3]).getTime(); // fecha local, sin desfase UTC
+            if (m) return new Date(+m[1], +m[2] - 1, +m[3]).getTime();
             const n = Date.parse(v);
             return isNaN(n) ? null : n;
         }
 
-        // dd/mm/aa ("-" si no hay fecha)
         function formatoDia(ms) {
             if (ms === null || ms === undefined) return '-';
             const d = new Date(ms);
@@ -738,7 +748,6 @@
             return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)}`;
         }
 
-        // Lee un movimiento del historial aunque venga con otro formato (número, nombre de columna, fecha en texto…)
         function numColumna(v) {
             if (v === null || v === undefined || v === '') return null;
             const n = Number(v);
@@ -756,7 +765,6 @@
             return { de, a, nDe: numColumna(de), nA: numColumna(a), ms: aMs(m.fecha ?? m.fechaHora ?? m.timestamp ?? m.date) };
         }
 
-        // Fecha del último cambio de columna hacia 'col' según el historial (null si no hay)
         function ultimaEntradaEnColumna(c, col) {
             const h = Array.isArray(c.historial) ? c.historial : [];
             let mejor = null;
@@ -767,15 +775,12 @@
             return mejor;
         }
 
-        // Fecha con la que un coche archivado entra en los filtros año/mes y en el ocultado de meses anteriores:
-        // el día en que pasó a la columna 5. Solo si no existe ese dato (tarjetas antiguas) se usa la fecha de entrega.
         function fechaReferenciaArchivo(c) {
             return aMs(c.fechaArchivado) ?? ultimaEntradaEnColumna(c, 5) ?? aMs(c.fechaEntrega) ?? aMs(c.fechaEntradaIngreso);
         }
 
         const NOMBRES_COL_CORTOS = ["PDTE. PRESUP.", "PDTE. RECOGIDA", "EN TALLER", "ACABADO", "ARCHIVADO"];
 
-        // Días de calendario (enteros) entre dos fechas: mismo día = 0, ayer = 1…
         function diasCalendario(desdeMs, hastaMs) {
             const ini = ms => { const d = new Date(ms); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
             return Math.max(0, Math.round((ini(hastaMs) - ini(desdeMs)) / MS_DIA));
@@ -784,12 +789,9 @@
         function entradaTallerMs(c) {
             const a = aMs(c.fechaEntradaTaller);
             if (a !== null) return a;
-            return c.columna === 3 ? ultimaEntradaEnColumna(c, 3) : null; // tarjetas antiguas que ya estaban en la col 3
+            return c.columna === 3 ? ultimaEntradaEnColumna(c, 3) : null;
         }
 
-        // Días enteros que la tarjeta está (o estuvo) en la columna 3 "en taller reparador".
-        // En col 3 cuenta hasta hoy; si ya salió, desde que entró hasta que pasó a la col 4.
-        // null si faltan fechas o fue un salto directo entre columnas (< 1 s).
         function diasEnTaller(c) {
             const a = entradaTallerMs(c);
             if (a === null) return null;
@@ -799,12 +801,10 @@
             return diasCalendario(a, b);
         }
 
-// Importes de un pagador: 'comp' (Cia. Aseguradora) o 'cli' (Cliente)
         function importesPagador(c, p) {
             return { venta: Number(c[p + 'Venta']) || 0, coste: Number(c[p + 'Coste']) || 0, recambios: Number(c[p + 'Recambios']) || 0 };
         }
 
-        // Suma los importes de los pagadores marcados en el coche; filtroPagador: TODOS | COMPANIA | CLIENTE
         function importesCoche(c, filtroPagador) {
             const r = { venta: 0, coste: 0, recambios: 0 };
             [['COMPANIA', 'comp', 'esCompania'], ['CLIENTE', 'cli', 'esCliente']].forEach(([clave, p, marca]) => {
@@ -817,7 +817,7 @@
         }
 
         function guardarDb(idDoc, datos) {
-            if (!db) return;
+            if (!db || !soyAdmin()) return;
             db.collection("vehiculos").doc(idDoc).update(datos).catch(err => {
                 console.error("Error al guardar:", err);
                 alert("No se pudo guardar en la base de datos. Revisa la conexión.");
@@ -847,7 +847,11 @@
                 modal.style.display = 'flex';
             } else {
                 modal.style.display = 'none';
-                document.getElementById('user-role-text').innerText = (soyAdmin()) ? '👑 TÚ (ADMIN)' : `🏢 ${usuarioActual.toUpperCase()}`;
+                let textoRol = `🏢 ${usuarioActual.toUpperCase()}`;
+                if (usuarioActual === 'ADMIN') textoRol = '👑 TÚ (ADMIN)';
+                if (usuarioActual === 'ADMIN_LECTURA') textoRol = '👁️ ADMIN (LECTURA)';
+                
+                document.getElementById('user-role-text').innerText = textoRol;
                 aplicarPermisosRol();
                 escucharFirebase();
             }
@@ -876,7 +880,7 @@
             location.reload();
         }
 
-const COLORES_TALLER = { 'APV Cars': ['#00d2ff', '#002233'], 'Auto Bros': ['#10b981', '#022c22'] };
+        const COLORES_TALLER = { 'APV Cars': ['#00d2ff', '#002233'], 'Auto Bros': ['#10b981', '#022c22'] };
 
         function actualizarColorSelectTaller() {
             const sel = document.getElementById('f-taller');
@@ -887,13 +891,14 @@ const COLORES_TALLER = { 'APV Cars': ['#00d2ff', '#002233'], 'Auto Bros': ['#10b
         }
 
         function aplicarPermisosRol() {
-            const esAdmin = (soyAdmin());
+            const esAdminVista = esPerfilAdmin();
+            const esAdminEscritura = soyAdmin();
             const selectorFiltro = document.getElementById('filtro-taller');
             const formCrear = document.getElementById('p-form-container');
             const btnToggleStats = document.getElementById('btn-toggle-stats-btn');
             const statsPanel = document.getElementById('admin-stats-container');
 
-            if (!esAdmin) {
+            if (!esAdminVista) {
                 selectorFiltro.value = usuarioActual;
                 selectorFiltro.disabled = true;
                 formCrear.style.display = 'none';
@@ -901,7 +906,7 @@ const COLORES_TALLER = { 'APV Cars': ['#00d2ff', '#002233'], 'Auto Bros': ['#10b
                 statsPanel.style.display = 'none';
             } else {
                 selectorFiltro.disabled = false;
-                formCrear.style.display = 'flex';
+                formCrear.style.display = esAdminEscritura ? 'flex' : 'none'; // Solo admin escritura crea coches
                 btnToggleStats.style.display = 'flex';
                 statsPanel.style.display = estadisticasVisibles ? 'block' : 'none';
                 actualizarColorSelectTaller();
@@ -955,7 +960,7 @@ const COLORES_TALLER = { 'APV Cars': ['#00d2ff', '#002233'], 'Auto Bros': ['#10b
             dibujar();
         }
 
-function cambiarFechaEntrega(idDoc, event, inputElem) {
+        function cambiarFechaEntrega(idDoc, event, inputElem) {
             event.stopPropagation();
             const c = coches.find(x => x.idDoc === idDoc);
             if (!c || !soyAdmin()) return;
@@ -979,16 +984,19 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
         }
 
         function permitirSoltarColumna(e) {
+            if (!soyAdmin()) return;
             e.preventDefault();
             e.currentTarget.classList.add('drag-over');
         }
 
         function salirColumna(e) {
+            if (!soyAdmin()) return;
             if (e.currentTarget.contains(e.relatedTarget)) return;
             e.currentTarget.classList.remove('drag-over');
         }
 
         function soltarEnColumna(e, nColDestino) {
+            if (!soyAdmin()) return;
             e.preventDefault();
             e.currentTarget.classList.remove('drag-over');
 
@@ -1001,9 +1009,10 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
         function dibujar() {
             const buscadorElem = document.getElementById('buscador');
             const buscador = buscadorElem ? buscadorElem.value.toUpperCase() : '';
-            const esAdmin = (soyAdmin());
+            const esAdminVista = esPerfilAdmin();
+            const esAdminEscritura = soyAdmin();
             const tallerFiltroElem = document.getElementById('filtro-taller');
-            const tallerFiltro = esAdmin ? (tallerFiltroElem ? tallerFiltroElem.value : 'TODOS') : usuarioActual;
+            const tallerFiltro = esAdminVista ? (tallerFiltroElem ? tallerFiltroElem.value : 'TODOS') : usuarioActual;
 
             cols.forEach((n, idx) => {
                 const cNum = idx + 1;
@@ -1017,8 +1026,6 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
                         && (mat.includes(buscador) || mod.includes(buscador));
                 });
 
-                // Columna 5: se ocultan los archivados de meses anteriores (solo en pantalla; las estadísticas siguen usando todos).
-                // Si hay texto en el buscador se muestran todos, para poder encontrar una matrícula antigua.
                 let filtrados = coincidentes, ocultos = 0;
                 if (cNum === 5 && !verArchivadosAnteriores && !buscador) {
                     const ahora = new Date();
@@ -1052,7 +1059,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
                     const dcs = totalDocs > 0 ? `<span class="badge-docs">📄 ${totalDocs} DOC(S)</span>` : '';
 
                     let infoEconomica = '';
-                    if (esAdmin) {
+                    if (esAdminVista) {
                         const im = importesCoche(c, 'TODOS');
                         if (im.venta > 0 || im.coste > 0 || im.recambios > 0) {
                             infoEconomica = `<div style="font-size:9px; font-weight:700; color:#38bdf8; margin-top:3px; background:#181d22; padding:2px 4px; border-radius:3px; border:1px solid #334155;">
@@ -1067,7 +1074,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
                         : '';
 
                     let botonesAccion = '';
-                    if (esAdmin) {
+                    if (esAdminEscritura) {
                         botonesAccion = `
                             <div class="actions" onclick="event.stopPropagation()">
                                 <button onclick="borrar('${c.idDoc}')" class="btn-b">BORRAR</button>
@@ -1080,7 +1087,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
 
                     colHtml += `
                         <div class="tarjeta ${claseTaller}"
-                             draggable="${esAdmin ? 'true' : 'false'}"
+                             draggable="${esAdminEscritura ? 'true' : 'false'}"
                              ondragstart="alComenzarArrastre(event, '${c.idDoc}')"
                              ondragend="alTerminarArrastre(event)"
                              onclick="abrirChecklist('${c.idDoc}')">
@@ -1108,7 +1115,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
                                 </div>
                                 <div class="badge-fecha-editable">
                                     <span>ENTREGA EST.:</span>
-                                    <input type="date" value="${c.fechaEntrega || ''}" onchange="cambiarFechaEntrega('${c.idDoc}', event, this)" ${!esAdmin ? 'disabled' : ''}>
+                                    <input type="date" value="${c.fechaEntrega || ''}" onchange="cambiarFechaEntrega('${c.idDoc}', event, this)" ${!esAdminEscritura ? 'disabled' : ''}>
                                 </div>
                             </div>
 
@@ -1120,7 +1127,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
                 columnaDiv.innerHTML = colHtml;
             });
 
-            if (esAdmin && estadisticasVisibles) {
+            if (esAdminVista && estadisticasVisibles) {
                 actualizarEstadisticasAdmin();
             }
         }
@@ -1140,7 +1147,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
         }
 
         function actualizarEstadisticasAdmin() {
-            if (!soyAdmin() || !estadisticasVisibles) return;
+            if (!esPerfilAdmin() || !estadisticasVisibles) return;
 
             poblarFiltroAnios();
             const fTaller = document.getElementById('stats-filtro-taller').value;
@@ -1175,7 +1182,6 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
             const porc = venta > 0 ? (beneficio / venta) * 100 : 0;
             const eur = n => n.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
 
-            // Tiempo medio: solo coches con entrada (col 3) y salida (col 4) válidas
             const duraciones = cochesFiltrados.map(diasEnTaller).filter(d => d !== null);
             let txtTiempo = '-';
             if (duraciones.length) {
@@ -1197,7 +1203,6 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
             renderGraficosAdmin(fTaller, fPag, cochesFiltrados);
         }
 
-        // Plugin propio: dibuja siempre los importes sobre las barras y dentro de los sectores
         const pluginImportesVisibles = {
             id: 'importesVisibles',
             afterDatasetsDraw(chart) {
@@ -1289,7 +1294,9 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
             const c = coches.find(x => x.idDoc === idDoc);
             if(!c) return;
 
-            const esAdmin = (soyAdmin());
+            const esAdminVista = esPerfilAdmin();
+            const esAdminEscritura = soyAdmin();
+
             const modalContent = document.querySelector('.modal-content');
             modalContent.classList.remove('m-apv', 'm-autobros');
             const tituloElem = document.getElementById('modal-titulo');
@@ -1308,7 +1315,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
             document.getElementById('modal-vehiculo-completo').checked = false;
 
             const secAdmin = document.getElementById('modal-seccion-admin');
-            if (esAdmin) {
+            if (esAdminVista) {
                 secAdmin.style.display = 'block';
 
                 document.getElementById('modal-chk-compania').checked = !!c.esCompania;
@@ -1333,7 +1340,13 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
 
             actualizarGaleriaPreview();
 
-            document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdmin);
+            // Bloquear / Desbloquear inputs según si tiene permisos de modificación
+            document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdminEscritura);
+            
+            // Ocultar / Mostrar botón de guardar y zona de adjuntar
+            document.getElementById('btn-guardar-modal').style.display = esAdminEscritura ? 'inline-block' : 'none';
+            document.getElementById('seccion-adjuntar-archivos').style.display = esAdminEscritura ? 'block' : 'none';
+
             document.getElementById('modal-checklist').style.display = 'flex';
         }
 
@@ -1347,15 +1360,25 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
             document.querySelectorAll('.chk-pieza').forEach(chk => chk.checked = master.checked);
         }
 
-        function permitirSoltar(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragover'); }
-        function salirZona(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('dragover'); }
+        function permitirSoltar(e) { 
+            if (!soyAdmin()) return;
+            e.preventDefault(); 
+            document.getElementById('drop-zone').classList.add('dragover'); 
+        }
+        function salirZona(e) { 
+            if (!soyAdmin()) return;
+            e.preventDefault(); 
+            document.getElementById('drop-zone').classList.remove('dragover'); 
+        }
         function soltarArchivos(e) {
+            if (!soyAdmin()) return;
             e.preventDefault();
             document.getElementById('drop-zone').classList.remove('dragover');
             procesarArchivosFotos(e.dataTransfer.files);
         }
 
         function manejarSubidaArchivos(e) {
+            if (!soyAdmin()) return;
             procesarArchivosFotos(e.target.files);
             e.target.value = '';
         }
@@ -1369,7 +1392,6 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
             });
         }
 
-        // Reduce la foto (máx. 1280 px, JPEG 70%) para que quepa en el documento de Firestore
         function comprimirImagen(archivo) {
             return new Promise((res, rej) => {
                 const url = URL.createObjectURL(archivo);
@@ -1389,7 +1411,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
         }
 
         async function procesarArchivosFotos(archivos) {
-            if (!archivos) return;
+            if (!archivos || !soyAdmin()) return;
             const lista = Array.from(archivos);
             for (const archivo of lista) {
                 try {
@@ -1410,16 +1432,20 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
         function actualizarGaleriaPreview() {
             const cont = document.getElementById('galeria-preview');
             cont.innerHTML = '';
+            const esAdminEscritura = soyAdmin();
+
             fotosTemporales.forEach((adj, index) => {
                 const esImg = adj.tipo === 'imagen';
                 const srcData = adj.data;
                 const nombre = esc(adj.nombre || `Adjunto ${index+1}`);
+                const btnBorrar = esAdminEscritura ? `<button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
+                const btnBorrarDoc = esAdminEscritura ? `<button class="btn-del" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
 
                 if (esImg) {
                     cont.innerHTML += `
                         <div class="miniatura-container">
                             <img src="${srcData}" alt="Foto" onclick="abrirVisorFoto(event, ${index})">
-                            <button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>
+                            ${btnBorrar}
                         </div>`;
                 } else {
                     cont.innerHTML += `
@@ -1428,7 +1454,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
                             <a href="${srcData}" download="${nombre}" style="color:#60a5fa; text-decoration:none; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${nombre}">
                                 ${nombre}
                             </a>
-                            <button class="btn-del" onclick="eliminarFotoTemporal(${index})">✕</button>
+                            ${btnBorrarDoc}
                         </div>`;
                 }
             });
@@ -1448,6 +1474,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
         }
 
         function eliminarFotoTemporal(index) {
+            if (!soyAdmin()) return;
             fotosTemporales.splice(index, 1);
             actualizarGaleriaPreview();
         }
@@ -1459,29 +1486,26 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
         }
 
         function guardarChecklist() {
-            if(!cocheIdActual) return;
+            if(!cocheIdActual || !soyAdmin()) return;
             const c = coches.find(x => x.idDoc === cocheIdActual);
             if(!c) return;
 
-            const esAdmin = (soyAdmin());
             const datosActualizar = {
                 textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
                 fotos: [...fotosTemporales],
                 fechaUltimaModificacion: Date.now()
             };
 
-            if (esAdmin) {
-                const seleccionadas = [];
-                document.querySelectorAll('.chk-pieza:checked').forEach(chk => seleccionadas.push(chk.value));
-                datosActualizar.piezas = seleccionadas;
-                datosActualizar.urgente = document.getElementById('modal-urgente').checked;
+            const seleccionadas = [];
+            document.querySelectorAll('.chk-pieza:checked').forEach(chk => seleccionadas.push(chk.value));
+            datosActualizar.piezas = seleccionadas;
+            datosActualizar.urgente = document.getElementById('modal-urgente').checked;
 
-                datosActualizar.esCompania = document.getElementById('modal-chk-compania').checked;
-                datosActualizar.esCliente = document.getElementById('modal-chk-cliente').checked;
-                ['comp', 'cli'].forEach(p => ['Venta', 'Coste', 'Recambios'].forEach(k => {
-                    datosActualizar[p + k] = parseFloat(document.getElementById(`modal-${p}-${k.toLowerCase()}`).value) || 0;
-                }));
-            }
+            datosActualizar.esCompania = document.getElementById('modal-chk-compania').checked;
+            datosActualizar.esCliente = document.getElementById('modal-chk-cliente').checked;
+            ['comp', 'cli'].forEach(p => ['Venta', 'Coste', 'Recambios'].forEach(k => {
+                datosActualizar[p + k] = parseFloat(document.getElementById(`modal-${p}-${k.toLowerCase()}`).value) || 0;
+            }));
 
             const peso = JSON.stringify(datosActualizar.fotos).length;
             if (peso > LIMITE_ADJUNTOS_BYTES) {
@@ -1506,14 +1530,12 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
             const cambios = { columna: nCol };
 
             if (nCol < 3) {
-                // Vuelve a antes del taller: se reinicia el cronómetro de reparación
                 cambios.fechaEntradaTaller = null;
                 cambios.fechaEntregaTaller = null;
             } else if (nCol === 3) {
                 if (antes < 3 || !aMs(c.fechaEntradaTaller)) cambios.fechaEntradaTaller = ahora;
                 cambios.fechaEntregaTaller = null;
             } else if (antes < 4 || !aMs(c.fechaEntregaTaller)) {
-                // Col 4 o 5: se cierra el tiempo de reparación (si venía saltando la col 3 no hay entrada y no cuenta en la media)
                 cambios.fechaEntregaTaller = ahora;
             }
 
@@ -1548,7 +1570,7 @@ function cambiarFechaEntrega(idDoc, event, inputElem) {
             const mod = modInput.value.trim().toUpperCase();
 
             const nuevoCoche = {
-                fechaIngreso: Date.now(), // F. creación (no editable)
+                fechaIngreso: Date.now(),
                 Taller: tallerInput.value,
                 matricula: mat,
                 modelo: mod || "GENÉRICO",
