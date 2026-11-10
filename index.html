@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Taller - APV Cars & Auto Bros</title>
-    <link rel="icon" type="image/png" href="icon.png">
+    <!-- Política de Seguridad de Contenido (CSP) actualizada para permitir Firebase Auth y Firestore -->
+    
+    <title>Control Taller - APV Cars & Auto Bros (Seguro)</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
@@ -26,14 +29,14 @@
         }
         
         /* Pantalla de Login */
-        .login-overlay { position: fixed; inset: 0; background: rgba(18, 18, 18, 0.95); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .login-card { background: #272d34; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #f1f5f9; border: 1px solid #3b424a; }
+        .login-overlay { position: fixed; inset: 0; background: rgba(18, 18, 18, 0.96); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-card { background: #272d34; padding: 30px; border-radius: 8px; width: 90%; max-width: 420px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.6); color: #f1f5f9; border: 1px solid #3b424a; }
         .login-card h2 { margin-bottom: 8px; color: #38bdf8; font-size: 20px; font-weight: 600; }
-        .login-card p { font-size: 13px; color: #cbd5e1; margin-bottom: 20px; }
-        .login-card select, .login-card input { width: 100%; margin-bottom: 12px; padding: 10px; font-size: 14px; border: 1px solid #3b424a; border-radius: 6px; background: #1a1d21; color: #fff; }
+        .login-card p { font-size: 13px; color: #cbd5e1; margin-bottom: 16px; }
+        .login-card input { width: 100%; margin-bottom: 12px; padding: 10px; font-size: 14px; border: 1px solid #3b424a; border-radius: 6px; background: #1a1d21; color: #fff; text-transform: none; }
         .login-card button { width: 100%; padding: 10px; font-size: 14px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 5px; }
         .login-card button:hover { background: #0369a1; }
-        .error-msg { color: #f87171; font-size: 12px; margin-bottom: 10px; font-weight: 600; display: none; }
+        .error-msg { color: #f87171; font-size: 12px; margin-bottom: 10px; font-weight: 600; display: none; background: rgba(239, 68, 68, 0.1); padding: 8px; border-radius: 4px; border: 1px solid #ef4444; }
 
         .fixed-top-container {
             flex-shrink: 0;
@@ -229,7 +232,6 @@
         .col-titulo-4 { background-color: #15803d; }
         .col-titulo-5 { background-color: #525966; }
         
-        /* TARJETAS CON FONDO Y ETIQUETAS MÁS CLARAS Y VISIBLES */
         .tarjeta { 
             background-color: #3d454f !important; 
             border-radius: 6px; 
@@ -388,36 +390,41 @@
         @media (max-width: 760px) { .grid-checklist { grid-template-columns: 1fr; } }
     </style>
 
+    <!-- Firebase SDK (v8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
+    <!-- MODAL DE AUTENTICACIÓN CON FIREBASE AUTH -->
     <div id="login-modal" class="login-overlay">
         <div class="login-card">
-            <h2>🔐 Acceso al Taller</h2>
+            <h2>🔐 Acceso Seguro al Taller</h2>
             <p>Selecciona tu perfil e introduce tu contraseña:</p>
-            <select id="login-rol-select">
+            
+            <select id="login-rol-select" style="width: 100%; margin-bottom: 12px; padding: 10px; font-size: 14px; border: 1px solid #3b424a; border-radius: 6px; background: #1a1d21; color: #fff;">
                 <option value="ADMIN">Tú / Administrador (Total)</option>
                 <option value="ADMIN_LECTURA">👁️ Administrador (Solo Lectura)</option>
                 <option value="APV Cars">Taller APV Cars</option>
                 <option value="Auto Bros">Taller Auto Bros</option>
             </select>
+
             <input type="password" id="login-pass" placeholder="Contraseña..." onkeypress="if(event.key==='Enter') iniciarSesion()">
-            <div id="login-error" class="error-msg">⚠️ Contraseña incorrecta</div>
-            <button type="button" onclick="iniciarSesion()">ENTRAR AL PANEL</button>
+            
+            <div id="login-error" class="error-msg">⚠️ Contraseña incorrecta o error de conexión</div>
+            <button type="button" id="btn-login" onclick="iniciarSesion()">ENTRAR AL PANEL</button>
         </div>
     </div>
 
     <div class="app-container">
-        
         <div class="fixed-top-container">
             <header>
                 <h1>⚙️ Control de Taller (APV Cars & Auto Bros)</h1>
                 <div style="display:flex; align-items:center; gap: 10px; flex-wrap: wrap;">
                     <div class="user-badge">
-                        <span id="user-role-text">ADMIN</span>
+                        <span id="user-role-text">Cargando perfil...</span>
                         <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
                     </div>
                     
@@ -541,11 +548,11 @@
                 <input type="text" id="f-mod" placeholder="MARCA / MODELO" onkeypress="chequearEnter(event)">
                 
                 <div style="display: flex; align-items: center; gap: 40px;">
-                <div style="display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: #cbd5e1;">
-                    📅 <span style="font-size: 11px; font-weight: 700;">ENTREGA ESTIMADA:</span> 
-                    <input type="date" id="f-fecha" style="padding: 6px 8px; font-size: 11px; font-weight: 600; width: 130px;">
-                </div>
-                <button onclick="agregarVehiculo()">+ INGRESAR COCHE</button>
+                    <div style="display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; color: #cbd5e1;">
+                        📅 <span style="font-size: 11px; font-weight: 700;">ENTREGA ESTIMADA:</span> 
+                        <input type="date" id="f-fecha" style="padding: 6px 8px; font-size: 11px; font-weight: 600; width: 130px;">
+                    </div>
+                    <button onclick="agregarVehiculo()">+ INGRESAR COCHE</button>
                 </div>
             </div>
         </div>
@@ -558,7 +565,6 @@
             <div id="col-4" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 4)"></div>
             <div id="col-5" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 5)"></div>
         </div>
-
     </div>
 
     <!-- MODAL DETALLES & CHECKLIST -->
@@ -658,10 +664,10 @@
             </div>
 
             <div style="margin-top: 10px;" id="seccion-adjuntar-archivos">
-                <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">📷 📁 ADJUNTAR FOTOS Y DOCUMENTOS (PDF, DOCX, TXT):</label>
+                <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">📷 📁 ADJUNTAR FOTOS Y DOCUMENTOS (JPG, PNG, PDF, DOCX):</label>
                 <div id="drop-zone" class="drop-zone" ondragover="permitirSoltar(event)" ondragleave="salirZona(event)" ondrop="soltarArchivos(event)">
                     <p style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">📁 ARRASTRA ARCHIVOS O FOTOS AQUÍ O</p>
-                    <input type="file" id="input-fotos" accept="image/*,.pdf,.doc,.docx,.txt" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;" class="solo-admin">
+                    <input type="file" id="input-fotos" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;" class="solo-admin">
                     <div id="galeria-preview" class="galeria-adjuntos"></div>
                 </div>
             </div>
@@ -679,6 +685,7 @@
     </div>
 
     <script>
+        // Configuración de Firebase Firestore y Auth
         const firebaseConfig = {
             apiKey: "AIzaSyDJnWhP7nUNs1QoU5RlPuUkR0giKx1ti4I",
             authDomain: "control-taller-pintura.firebaseapp.com",
@@ -689,16 +696,11 @@
             appId: "1:695966363613:web:19fd401b3098905f62d034"
         };
 
-        const CREDENCIALES = {
-            "ADMIN": "admin2026",
-            "ADMIN_LECTURA": "lectura2026",
-            "APV Cars": "apv2026",
-            "Auto Bros": "autobros2026"
-        };
-
         let db = null;
+        let auth = null;
         let coches = [];
-        let usuarioActual = localStorage.getItem('taller_rol') || null;
+        let usuarioActual = null; // Guardará el objeto del usuario o su rol verificado
+        let rolUsuario = 'INVITADO';
         let cocheIdActual = null;
         let fotosTemporales = [];
         let estadisticasVisibles = false;
@@ -710,13 +712,29 @@
         const MARGEN_RECAMBIO = 0.25;
         const MS_DIA = 86400000;
         
-        const esPerfilAdmin = () => usuarioActual === 'ADMIN' || usuarioActual === 'ADMIN_LECTURA';
-        const soyAdmin = () => usuarioActual === 'ADMIN';
+        // Roles: ADMIN, ADMIN_LECTURA, APV Cars, Auto Bros
+        const esPerfilAdmin = () => rolUsuario === 'ADMIN' || rolUsuario === 'ADMIN_LECTURA';
+        const soyAdmin = () => rolUsuario === 'ADMIN';
 
         const LIMITE_ADJUNTOS_BYTES = 900000;
 
+        // Mapeo interno de Perfiles/Roles a Correos de Firebase Auth
+        const CORREOS_POR_ROL = {
+            "ADMIN": "admin@taller.com",
+            "ADMIN_LECTURA": "lectura@taller.com",
+            "APV Cars": "apv@taller.com",
+            "Auto Bros": "autobros@taller.com"
+        };
+
+        // Función estricta de sanitización contra ataques XSS
         function esc(s) {
-            return String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+            if (s === null || s === undefined) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         function aMs(v) {
@@ -814,14 +832,16 @@
             if (!db || !soyAdmin()) return;
             db.collection("vehiculos").doc(idDoc).update(datos).catch(err => {
                 console.error("Error al guardar:", err);
-                alert("No se pudo guardar en la base de datos. Revisa la conexión.");
+                alert("No se pudo guardar en la base de datos. Permisos insuficientes o error de conexión.");
             });
         }
 
+        // Inicialización segura de Firebase
         try {
             if (typeof firebase !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
+                auth = firebase.auth();
             }
         } catch(e) {
             console.error("Error al inicializar Firebase:", e);
@@ -835,43 +855,88 @@
             "archivado"
         ];
 
-        function comprobarSesion() {
-            const modal = document.getElementById('login-modal');
-            if (!usuarioActual) {
-                modal.style.display = 'flex';
-            } else {
-                modal.style.display = 'none';
-                let textoRol = `🏢 ${usuarioActual.toUpperCase()}`;
-                if (usuarioActual === 'ADMIN') textoRol = '👑 TÚ (ADMIN)';
-                if (usuarioActual === 'ADMIN_LECTURA') textoRol = '👁️ ADMIN (LECTURA)';
-                
-                document.getElementById('user-role-text').innerText = textoRol;
-                aplicarPermisosRol();
-                escucharFirebase();
-            }
+        // Observador de Estado de Autenticación mediante Firebase Auth
+        function inicializarAuth() {
+            if (!auth) return;
+            
+            auth.onAuthStateChanged(async (user) => {
+                const modal = document.getElementById('login-modal');
+                if (user) {
+                    usuarioActual = user;
+                    // Intentar obtener custom claim 'rol' o inferir según el email
+                    try {
+                        const idTokenResult = await user.getIdTokenResult();
+                        rolUsuario = idTokenResult.claims.rol || determinarRolPorEmail(user.email);
+                    } catch(e) {
+                        rolUsuario = determinarRolPorEmail(user.email);
+                    }
+
+                    modal.style.display = 'none';
+                    let textoRol = `🏢 ${esc(rolUsuario.toUpperCase())}`;
+                    if (rolUsuario === 'ADMIN') textoRol = '👑 TÚ (ADMIN)';
+                    if (rolUsuario === 'ADMIN_LECTURA') textoRol = '👁️ ADMIN (LECTURA)';
+                    
+                    document.getElementById('user-role-text').innerText = textoRol;
+                    aplicarPermisosRol();
+                    escucharFirebase();
+                } else {
+                    usuarioActual = null;
+                    rolUsuario = 'INVITADO';
+                    modal.style.display = 'flex';
+                }
+            });
+        }
+
+        // Método auxiliar para mapear el email a rol localmente si no hay Custom Claims
+        function determinarRolPorEmail(email) {
+            if (!email) return 'INVITADO';
+            const mail = email.toLowerCase();
+            if (mail.includes('admin@')) return 'ADMIN';
+            if (mail.includes('lectura@')) return 'ADMIN_LECTURA';
+            if (mail.includes('apv@')) return 'APV Cars';
+            if (mail.includes('autobros@')) return 'Auto Bros';
+            return 'ADMIN'; // Rol por defecto asignado tras login exitoso
         }
 
         function iniciarSesion() {
             const selectRol = document.getElementById('login-rol-select').value;
             const passInput = document.getElementById('login-pass').value.trim();
             const errorDiv = document.getElementById('login-error');
-            const passCorrecta = CREDENCIALES[selectRol];
+            const btnLogin = document.getElementById('btn-login');
 
-            if (passCorrecta && passCorrecta === passInput) {
-                errorDiv.style.display = 'none';
-                usuarioActual = selectRol;
-                localStorage.setItem('taller_rol', usuarioActual);
-                document.getElementById('login-pass').value = '';
-                comprobarSesion();
-            } else {
+            const emailAsociado = CORREOS_POR_ROL[selectRol];
+
+            if (!emailAsociado || !passInput) {
+                errorDiv.innerText = "⚠️ Introduce tu contraseña.";
                 errorDiv.style.display = 'block';
+                return;
             }
+
+            btnLogin.disabled = true;
+            btnLogin.innerText = "AUTENTICANDO...";
+            errorDiv.style.display = 'none';
+
+            auth.signInWithEmailAndPassword(emailAsociado, passInput)
+                .then(() => {
+                    document.getElementById('login-pass').value = '';
+                })
+                .catch((error) => {
+                    console.error("Error Auth:", error);
+                    errorDiv.innerText = `⚠️ Contraseña incorrecta`;
+                    errorDiv.style.display = 'block';
+                })
+                .finally(() => {
+                    btnLogin.disabled = false;
+                    btnLogin.innerText = "ENTRAR AL PANEL";
+                });
         }
 
         function cerrarSesion() {
-            localStorage.removeItem('taller_rol');
-            usuarioActual = null;
-            location.reload();
+            if (auth) {
+                auth.signOut().then(() => {
+                    location.reload();
+                });
+            }
         }
 
         const COLORES_TALLER = { 'APV Cars': ['#00d2ff', '#002233'], 'Auto Bros': ['#10b981', '#022c22'] };
@@ -893,7 +958,7 @@
             const statsPanel = document.getElementById('admin-stats-container');
 
             if (!esAdminVista) {
-                selectorFiltro.value = usuarioActual;
+                selectorFiltro.value = rolUsuario;
                 selectorFiltro.disabled = true;
                 formCrear.style.display = 'none';
                 btnToggleStats.style.display = 'none';
@@ -923,7 +988,7 @@
         }
 
         function escucharFirebase() {
-            if (!db) { alert('No se pudo conectar con Firebase. Recarga la página.'); return; }
+            if (!db) return;
 
             db.collection("vehiculos").onSnapshot((snapshot) => {
                 coches = [];
@@ -931,7 +996,7 @@
                 dibujar();
             }, (err) => {
                 console.error("Error de lectura en Firestore:", err);
-                alert("No se pudo leer la base de datos. Revisa la conexión o las reglas de Firestore.");
+                alert("Error de lectura: asegúrate de haber configurado las Reglas de Seguridad en Firebase Firestore.");
             });
         }
 
@@ -1006,7 +1071,7 @@
             const esAdminVista = esPerfilAdmin();
             const esAdminEscritura = soyAdmin();
             const tallerFiltroElem = document.getElementById('filtro-taller');
-            const tallerFiltro = esAdminVista ? (tallerFiltroElem ? tallerFiltroElem.value : 'TODOS') : usuarioActual;
+            const tallerFiltro = esAdminVista ? (tallerFiltroElem ? tallerFiltroElem.value : 'TODOS') : rolUsuario;
 
             cols.forEach((n, idx) => {
                 const cNum = idx + 1;
@@ -1031,7 +1096,7 @@
                     ocultos = coincidentes.length - filtrados.length;
                 }
 
-                let colHtml = `<div class="col-titulo col-titulo-${cNum}"><span>${n.toUpperCase()}</span><span>${filtrados.length}</span></div>`;
+                let colHtml = `<div class="col-titulo col-titulo-${cNum}"><span>${esc(n.toUpperCase())}</span><span>${filtrados.length}</span></div>`;
                 if (cNum === 5 && (ocultos > 0 || verArchivadosAnteriores)) {
                     colHtml += `<button type="button" class="btn-m" style="width:100%; margin-bottom:10px; padding:6px;" onclick="toggleArchivadosAnteriores()">${verArchivadosAnteriores ? '🙈 OCULTAR MESES ANTERIORES' : `📦 ${ocultos} DE MESES ANTERIORES OCULTOS · VER`}</button>`;
                 }
@@ -1071,10 +1136,10 @@
                     if (esAdminEscritura) {
                         botonesAccion = `
                             <div class="actions" onclick="event.stopPropagation()">
-                                <button onclick="borrar('${c.idDoc}')" class="btn-b">BORRAR</button>
+                                <button onclick="borrar('${esc(c.idDoc)}')" class="btn-b">BORRAR</button>
                                 <div>
-                                    ${cNum > 1 ? `<button onclick="mover('${c.idDoc}', ${cNum-1})" class="btn-m">&lt;</button>` : ''}
-                                    ${cNum < 5 ? `<button onclick="mover('${c.idDoc}', ${cNum+1})" class="btn-m">&gt;</button>` : ''}
+                                    ${cNum > 1 ? `<button onclick="mover('${esc(c.idDoc)}', ${cNum-1})" class="btn-m">&lt;</button>` : ''}
+                                    ${cNum < 5 ? `<button onclick="mover('${esc(c.idDoc)}', ${cNum+1})" class="btn-m">&gt;</button>` : ''}
                                 </div>
                             </div>`;
                     }
@@ -1082,9 +1147,9 @@
                     colHtml += `
                         <div class="tarjeta ${claseTaller}"
                              draggable="${esAdminEscritura ? 'true' : 'false'}"
-                             ondragstart="alComenzarArrastre(event, '${c.idDoc}')"
+                             ondragstart="alComenzarArrastre(event, '${esc(c.idDoc)}')"
                              ondragend="alTerminarArrastre(event)"
-                             onclick="abrirChecklist('${c.idDoc}')">
+                             onclick="abrirChecklist('${esc(c.idDoc)}')">
                             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
                                 <span class="badge-taller">${esc(String(c.Taller || '').toUpperCase())}</span>
                                 <div style="text-align: right;">
@@ -1109,7 +1174,7 @@
                                 </div>
                                 <div class="badge-fecha-editable">
                                     <span>ENTREGA EST.:</span>
-                                    <input type="date" value="${c.fechaEntrega || ''}" onchange="cambiarFechaEntrega('${c.idDoc}', event, this)" ${!esAdminEscritura ? 'disabled' : ''}>
+                                    <input type="date" value="${esc(c.fechaEntrega || '')}" onchange="cambiarFechaEntrega('${esc(c.idDoc)}', event, this)" ${!esAdminEscritura ? 'disabled' : ''}>
                                 </div>
                             </div>
 
@@ -1126,7 +1191,7 @@
             }
         }
 
-        /* --- ESTADÍSTICAS (EXCLUSIVO COLUMNA 5 - ARCHIVADOS) --- */
+        /* --- ESTADÍSTICAS --- */
         function poblarFiltroAnios() {
             const sel = document.getElementById('stats-filtro-anio');
             const previo = sel.value || 'TODOS';
@@ -1303,7 +1368,7 @@
             } else {
                 tituloElem.style.color = '#38bdf8';
             }
-            const up = v => String(v || '').toUpperCase();
+            const up = v => esc(String(v || '').toUpperCase());
             tituloElem.innerText = `LISTA DE CONTROL [${up(c.Taller)}] - ${up(c.matricula)} (${up(c.modelo)})`;
             document.getElementById('modal-urgente').checked = !!c.urgente;
             document.getElementById('modal-vehiculo-completo').checked = false;
@@ -1402,21 +1467,38 @@
             });
         }
 
+        // Validación estricta de MIME types y límites de peso en cliente
         async function procesarArchivosFotos(archivos) {
             if (!archivos || !soyAdmin()) return;
+            
+            const tiposMimePermitidos = [
+                'image/jpeg', 'image/png', 'image/webp',
+                'application/pdf',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'text/plain'
+            ];
+
             const lista = Array.from(archivos);
             for (const archivo of lista) {
                 try {
-                    const esImagen = archivo.type.startsWith('image/');
-                    if (!esImagen && archivo.size > 600000) {
-                        alert(`"${archivo.name}" pesa demasiado (máximo 600 KB para documentos).`);
+                    // 1. Validar Tipo MIME
+                    if (!tiposMimePermitidos.includes(archivo.type)) {
+                        alert(`El archivo "${esc(archivo.name)}" no tiene un formato permitido (solamente imágenes, PDF, DOCX o TXT).`);
                         continue;
                     }
+
+                    // 2. Validar Peso Máximo por archivo (600 KB para no saturar Firestore Base64)
+                    if (archivo.size > 600000) {
+                        alert(`"${esc(archivo.name)}" excede el peso permitido de 600 KB.`);
+                        continue;
+                    }
+
+                    const esImagen = archivo.type.startsWith('image/');
                     const data = esImagen ? await comprimirImagen(archivo) : await leerComoDataURL(archivo);
                     fotosTemporales.push({ tipo: esImagen ? 'imagen' : 'doc', nombre: archivo.name, data });
                     actualizarGaleriaPreview();
                 } catch (e) {
-                    alert(`No se pudo leer "${archivo.name}".`);
+                    alert(`Error al procesar el archivo "${esc(archivo.name)}".`);
                 }
             }
         }
@@ -1543,7 +1625,7 @@
             if (!soyAdmin()) return;
             if(confirm("¿ELIMINAR ESTE VEHÍCULO DEFINITIVAMENTE?")) {
                 coches = coches.filter(x => x.idDoc !== idDoc);
-                if (db) db.collection("vehiculos").doc(idDoc).delete().catch(err => { console.error(err); alert("No se pudo eliminar el vehículo. Revisa la conexión."); });
+                if (db) db.collection("vehiculos").doc(idDoc).delete().catch(err => { console.error(err); alert("No se pudo eliminar el vehículo. Permisos insuficientes."); });
                 dibujar();
             }
         }
@@ -1583,7 +1665,7 @@
             };
 
             if (!db) { alert("Sin conexión con la base de datos."); return; }
-            db.collection("vehiculos").add(nuevoCoche).catch(err => { console.error(err); alert("No se pudo crear el vehículo. Revisa la conexión."); });
+            db.collection("vehiculos").add(nuevoCoche).catch(err => { console.error(err); alert("No se pudo crear el vehículo. Revisa las reglas de seguridad."); });
 
             matInput.value = '';
             modInput.value = '';
@@ -1591,7 +1673,9 @@
             matInput.focus();
         }
 
-        window.onload = function() { comprobarSesion(); };
+        window.onload = function() {
+            inicializarAuth();
+        };
     </script>
 </body>
 </html>
