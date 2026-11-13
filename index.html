@@ -777,7 +777,6 @@
             "Auto Bros": "autobros@taller.com"
         };
 
-        // Función estricta de sanitización contra ataques XSS
         function esc(s) {
             if (s === null || s === undefined) return '';
             return String(s)
@@ -811,7 +810,6 @@
             return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)}`;
         }
 
-        // Calcula si la fecha de entrega es hoy ('hoy') o mañana ('manana' = hoy es entrega - 1)
         function estadoFechaEntrega(fechaStr) {
             if (!fechaStr) return '';
             const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fechaStr).trim());
@@ -825,8 +823,6 @@
             return '';
         }
 
-        // Compatibilidad automática: si un documento antiguo en Firestore no tiene 'esquemaV2',
-        // desplazamos sus columnas antiguas (1..5) +1 para que encajen en (2..6) sin perder datos.
         function normalizarCocheEsquema(c) {
             if (c.esquemaV2) return c;
             const colAntigua = Number(c.columna) || 1;
@@ -917,7 +913,6 @@
             });
         }
 
-        // Inicialización segura de Firebase
         try {
             if (typeof firebase !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
@@ -928,7 +923,6 @@
             console.error("Error al inicializar Firebase:", e);
         }
 
-        // Observador de Estado de Autenticación mediante Firebase Auth
         function inicializarAuth() {
             if (!auth) return;
             
@@ -1103,7 +1097,6 @@
             dibujar();
         }
 
-        /* --- DRAG AND DROP NATIVO --- */
         function alComenzarArrastre(e, idDoc) {
             if (!soyAdmin()) {
                 e.preventDefault();
@@ -1177,9 +1170,9 @@
                         const msA = aMs(a.fechaEntrega);
                         const msB = aMs(b.fechaEntrega);
                         if (msA === null && msB === null) return 0;
-                        if (msA === null) return 1; // Sin fecha van al final
+                        if (msA === null) return 1;
                         if (msB === null) return -1;
-                        return msA - msB; // Ascendente: más reciente/próxima arriba, más tardía abajo
+                        return msA - msB;
                     });
                 }
 
@@ -1191,7 +1184,6 @@
                 filtrados.forEach(c => {
                     const claseTaller = (c.Taller === "APV Cars") ? "t-apv" : "t-autobros";
 
-                    // Evaluar alerta de fecha solo en columnas activas antes de acabar/archivar (col 1 a COL_EN_TALLER)
                     const estadoEntrega = (cNum <= COL_EN_TALLER) ? estadoFechaEntrega(c.fechaEntrega) : '';
                     const claseTarjetaEntrega = estadoEntrega === 'hoy' ? 'entrega-hoy' : (estadoEntrega === 'manana' ? 'entrega-manana' : '');
                     const claseBadgeEntrega = estadoEntrega === 'hoy' ? 'alerta-hoy' : (estadoEntrega === 'manana' ? 'alerta-manana' : '');
@@ -1212,10 +1204,14 @@
 
                     let infoEconomica = '';
                     if (esAdminVista) {
-                        const im = importesCoche(c, 'TODOS');
-                        if (im.venta > 0 || im.coste > 0 || im.recambios > 0) {
+                        // Suma de ambos pagadores (Aseguradora + Cliente)
+                        const vTotal = (Number(c.compVenta) || 0) + (Number(c.cliVenta) || 0);
+                        const cTotal = (Number(c.compCoste) || 0) + (Number(c.cliCoste) || 0);
+                        const rTotal = (Number(c.compRecambios) || 0) + (Number(c.cliRecambios) || 0);
+
+                        if (vTotal > 0 || cTotal > 0 || rTotal > 0) {
                             infoEconomica = `<div style="font-size:9px; font-weight:700; color:#38bdf8; margin-top:3px; background:#181d22; padding:2px 4px; border-radius:3px; border:1px solid #334155;">
-                                💶 V.ZSUB: ${im.venta.toFixed(0)}€ | Rec: ${im.recambios.toFixed(0)}€ | C: ${im.coste.toFixed(0)}€
+                                💶 V.ZSUB: ${vTotal.toFixed(0)}€ | Rec: ${rTotal.toFixed(0)}€ | C: ${cTotal.toFixed(0)}€
                             </div>`;
                         }
                     }
@@ -1284,7 +1280,6 @@
             }
         }
 
-        /* --- ESTADÍSTICAS --- */
         function poblarFiltroAnios() {
             const sel = document.getElementById('stats-filtro-anio');
             const previo = sel.value || 'TODOS';
@@ -1766,7 +1761,7 @@
                 fechaEntregaTaller: null,
                 fechaArchivado: null,
                 historial: [],
-                columna: COL_PRESUPUESTO, // Ingresa en "Pendiente Presupuesto/peritacion" (col 2)
+                columna: COL_PRESUPUESTO,
                 esquemaV2: true,
                 piezas: [],
                 textoLibre: "",
