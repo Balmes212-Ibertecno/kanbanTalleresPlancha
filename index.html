@@ -209,17 +209,17 @@
         }
 
         .col-titulo { 
-            font-size: 10.5px; 
+            font-size: 10px; 
             font-weight: 700; 
             color: #ffffff; 
-            padding: 10px 8px; 
+            padding: 10px 6px; 
             border-radius: 4px; 
             margin-bottom: 10px; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
             text-transform: uppercase; 
-            letter-spacing: 0.4px;
+            letter-spacing: 0.3px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.4);
             position: sticky;
             top: 0;
@@ -271,7 +271,7 @@
             box-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
         }
 
-        /* Alertas visuales de Fecha de Entrega (Hoy-1 en amarillo, Hoy en rojo) */
+        /* Alertas visuales de Fecha de Entrega */
         .tarjeta.entrega-manana {
             background-color: #423815 !important;
             border-top: 1px solid #eab308 !important;
@@ -715,7 +715,6 @@
     </div>
 
     <script>
-        // Configuración de Firebase Firestore y Auth
         const firebaseConfig = {
             apiKey: "AIzaSyDJnWhP7nUNs1QoU5RlPuUkR0giKx1ti4I",
             authDomain: "control-taller-pintura.firebaseapp.com",
@@ -742,7 +741,6 @@
         const MARGEN_RECAMBIO = 0.25;
         const MS_DIA = 86400000;
         
-        // Constantes de columnas (1: Vehículo Retirado, 2: Pdte Presup, 3: Pdte Recogida, 4: En Taller, 5: Acabado, 6: Archivado)
         const COL_RETIRADO = 1;
         const COL_PRESUPUESTO = 2;
         const COL_RECOGIDA = 3;
@@ -761,7 +759,6 @@
         ];
         const NOMBRES_COL_CORTOS = ["VEH. RETIRADO", "PDTE. PRESUP.", "PDTE. RECOGIDA", "EN TALLER", "ACABADO", "ARCHIVADO"];
 
-        // Roles: ADMIN, ADMIN_LECTURA, APV Cars, Auto Bros
         const esPerfilAdmin = () => rolUsuario === 'ADMIN' || rolUsuario === 'ADMIN_LECTURA';
         const soyAdmin = () => rolUsuario === 'ADMIN';
         const esTaller = () => rolUsuario === 'APV Cars' || rolUsuario === 'Auto Bros';
@@ -769,7 +766,6 @@
 
         const LIMITE_ADJUNTOS_BYTES = 900000;
 
-        // Mapeo interno de Perfiles/Roles a Correos de Firebase Auth
         const CORREOS_POR_ROL = {
             "ADMIN": "pmuelle.ibertecno@gmail.com",
             "ADMIN_LECTURA": "lectura@taller.com",
@@ -1087,7 +1083,7 @@
         }
 
         function cambiarFechaEntrega(idDoc, event, inputElem) {
-            event.stopPropagation();
+            event.stopPropagation(); // Evita que se propague y abra el modal de la tarjeta
             const c = coches.find(x => x.idDoc === idDoc);
             if (!c) return;
             const autorizado = soyAdmin() || (esTaller() && c.Taller === rolUsuario);
@@ -1164,7 +1160,7 @@
                     ocultos = coincidentes.length - filtrados.length;
                 }
 
-                // Ordenar por fecha de entrega estimada de más reciente/cercana a más tardía en "EN TALLER REPARADOR"
+                // Ordenar por fecha de entrega estimada de más reciente/cercana a más tardía en la columna de taller (Columna 4)
                 if (cNum === COL_EN_TALLER) {
                     filtrados = [...filtrados].sort((a, b) => {
                         const msA = aMs(a.fechaEntrega);
@@ -1204,7 +1200,7 @@
 
                     let infoEconomica = '';
                     if (esAdminVista) {
-                        // Suma de ambos pagadores (Aseguradora + Cliente)
+                        // Suma combinada de Aseguradora + Cliente (Venta, Recambios, Coste)
                         const vTotal = (Number(c.compVenta) || 0) + (Number(c.cliVenta) || 0);
                         const cTotal = (Number(c.compCoste) || 0) + (Number(c.cliCoste) || 0);
                         const rTotal = (Number(c.compRecambios) || 0) + (Number(c.cliRecambios) || 0);
@@ -1261,9 +1257,9 @@
                                     <span>ENTRADA TALLER:</span>
                                     <span class="valor">${formatoDia(entradaTallerMs(c))}</span>
                                 </div>
-                                <div class="badge-fecha-editable ${claseBadgeEntrega}">
+                                <div class="badge-fecha-editable ${claseBadgeEntrega}" onclick="event.stopPropagation()">
                                     <span>ENTREGA EST.:</span>
-                                    <input type="date" value="${esc(c.fechaEntrega || '')}" onchange="cambiarFechaEntrega('${esc(c.idDoc)}', event, this)" ${!puedeEditarFecha ? 'disabled' : ''}>
+                                    <input type="date" value="${esc(c.fechaEntrega || '')}" onchange="cambiarFechaEntrega('${esc(c.idDoc)}', event, this)" onclick="event.stopPropagation()" ${!puedeEditarFecha ? 'disabled' : ''}>
                                 </div>
                             </div>
 
@@ -1769,7 +1765,7 @@
             };
 
             if (!db) { alert("Sin conexión con la base de datos."); return; }
-            db.collection("vehiculos").add(nuevoCoche).catch(err => { console.error(err); alert("No se pudo crear el vehículo. Revisa las reglas de seguridad."); });
+            db.collection("vehiculos").add(nuevoCoshse || nuevoCoche).catch(err => { console.error(err); alert("No se pudo crear el vehículo. Revisa las reglas de seguridad."); });
 
             matInput.value = '';
             modInput.value = '';
