@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Política de Seguridad de Contenido (CSP) actualizada para permitir Firebase Auth y Firestore -->
     
-    <title>Control Taller - APV Cars & Auto Bros (Seguro)</title>
-    <link rel="icon" type="image/png" href="favicon.png">
+    <title>Control Taller - APV Cars & Auto Bros </title>
+    <link rel="icon" type="image/png" href="icon.png">
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -180,11 +180,11 @@
         }
         .chart-box h4 { font-size: 11px; text-transform: uppercase; color: #cbd5e1; margin-bottom: 10px; text-align: center; }
 
-        /* TABLERO KANBAN */
+        /* TABLERO KANBAN (6 COLUMNAS) */
         .tablero-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
             width: 100%;
             flex-grow: 1;
             overflow-y: auto;
@@ -192,7 +192,7 @@
             padding-bottom: 20px;
         }
 
-        @media (max-width: 1200px) { .tablero-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1400px) { .tablero-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 800px) { .tablero-grid { grid-template-columns: 1fr; } }
 
         .columna-div { 
@@ -209,28 +209,29 @@
         }
 
         .col-titulo { 
-            font-size: 11px; 
+            font-size: 10.5px; 
             font-weight: 700; 
             color: #ffffff; 
-            padding: 10px; 
+            padding: 10px 8px; 
             border-radius: 4px; 
             margin-bottom: 10px; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
             text-transform: uppercase; 
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.4);
             position: sticky;
             top: 0;
             z-index: 100;
         }
 
-        .col-titulo-1 { background-color: #d97706; }
-        .col-titulo-2 { background-color: #0284c7; }
-        .col-titulo-3 { background-color: #881337; }
-        .col-titulo-4 { background-color: #15803d; }
-        .col-titulo-5 { background-color: #525966; }
+        .col-titulo-1 { background-color: #6d28d9; } /* Vehículo Retirado */
+        .col-titulo-2 { background-color: #d97706; } /* Pendiente Presupuesto */
+        .col-titulo-3 { background-color: #0284c7; } /* Pendiente de Recogida */
+        .col-titulo-4 { background-color: #881337; } /* En Taller Reparador */
+        .col-titulo-5 { background-color: #15803d; } /* Acabado / Pdte Facturar */
+        .col-titulo-6 { background-color: #525966; } /* Archivado */
         
         .tarjeta { 
             background-color: #3d454f !important; 
@@ -268,6 +269,22 @@
             font-weight: 700;
             letter-spacing: 0.5px;
             box-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Alertas visuales de Fecha de Entrega (Hoy-1 en amarillo, Hoy en rojo) */
+        .tarjeta.entrega-manana {
+            background-color: #423815 !important;
+            border-top: 1px solid #eab308 !important;
+            border-right: 1px solid #eab308 !important;
+            border-bottom: 1px solid #eab308 !important;
+            box-shadow: 0 0 10px rgba(234, 179, 8, 0.35);
+        }
+        .tarjeta.entrega-hoy {
+            background-color: #4a1c20 !important;
+            border-top: 1px solid #ef4444 !important;
+            border-right: 1px solid #ef4444 !important;
+            border-bottom: 1px solid #ef4444 !important;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.45);
         }
 
         .badge-taller { padding: 3px 8px; border-radius: 4px; font-size: 10px; display: inline-block; }
@@ -324,6 +341,18 @@
             cursor: pointer;
             font-weight: 600;
             outline: none !important;
+        }
+        .badge-fecha-editable.alerta-manana input[type="date"] {
+            background-color: #eab308 !important;
+            color: #18181b !important;
+            border-color: #fef08a !important;
+            font-weight: 800 !important;
+        }
+        .badge-fecha-editable.alerta-hoy input[type="date"] {
+            background-color: #dc2626 !important;
+            color: #ffffff !important;
+            border-color: #fca5a5 !important;
+            font-weight: 800 !important;
         }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); justify-content: center; align-items: center; z-index: 1000; }
@@ -449,7 +478,7 @@
             <!-- PANEL DE ESTADÍSTICAS FINANCIERAS -->
             <div id="admin-stats-container" class="admin-stats-panel">
                 <div class="stats-header">
-                    <h2>📊 Panel de Estadísticas Financieras (Solo Columna 5 - Archivados)</h2>
+                    <h2>📊 Panel de Estadísticas Financieras (Solo Archivados)</h2>
                     <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                         <select id="stats-filtro-anio" onchange="actualizarEstadisticasAdmin()" style="font-size:11px; padding:4px 8px;">
                             <option value="TODOS">TODOS LOS AÑOS</option>
@@ -478,12 +507,12 @@
                     <div class="stat-card">
                         <div class="title">🚗 Total Vehículos</div>
                         <div id="st-total-coches" class="value">0</div>
-                        <div class="subtext">Solo columna 5 (archivados)</div>
+                        <div class="subtext">Solo archivados</div>
                     </div>
                     <div class="stat-card">
                         <div class="title">⏱️ Tiempo Medio Rep.</div>
                         <div id="st-tiempo-medio" class="value">-</div>
-                        <div id="st-tiempo-sub" class="subtext">Col 3 a Col 4</div>
+                        <div id="st-tiempo-sub" class="subtext">En taller a acabado</div>
                     </div>
                     <div class="stat-card">
                         <div class="title">💶 Ventas ZSUB</div>
@@ -557,13 +586,14 @@
             </div>
         </div>
 
-        <!-- TABLERO KANBAN -->
+        <!-- TABLERO KANBAN (6 COLUMNAS) -->
         <div class="tablero-grid">
             <div id="col-1" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 1)"></div>
             <div id="col-2" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 2)"></div>
             <div id="col-3" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 3)"></div>
             <div id="col-4" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 4)"></div>
             <div id="col-5" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 5)"></div>
+            <div id="col-6" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 6)"></div>
         </div>
     </div>
 
@@ -660,7 +690,7 @@
 
             <div style="margin-top: 10px;">
                 <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 3px;">📝 NOTAS / OBSERVACIONES LIBRES:</label>
-                <textarea id="modal-texto-libre" class="solo-admin" style="width: 100%; height: 50px; padding: 6px; border-radius: 4px; font-size: 11px; text-transform: uppercase;" placeholder="OBSERVACIONES..."></textarea>
+                <textarea id="modal-texto-libre" style="width: 100%; height: 50px; padding: 6px; border-radius: 4px; font-size: 11px; text-transform: uppercase;" placeholder="OBSERVACIONES..."></textarea>
             </div>
 
             <div style="margin-top: 10px;" id="seccion-adjuntar-archivos">
@@ -699,7 +729,7 @@
         let db = null;
         let auth = null;
         let coches = [];
-        let usuarioActual = null; // Guardará el objeto del usuario o su rol verificado
+        let usuarioActual = null;
         let rolUsuario = 'INVITADO';
         let cocheIdActual = null;
         let fotosTemporales = [];
@@ -712,9 +742,30 @@
         const MARGEN_RECAMBIO = 0.25;
         const MS_DIA = 86400000;
         
+        // Constantes de columnas (1: Vehículo Retirado, 2: Pdte Presup, 3: Pdte Recogida, 4: En Taller, 5: Acabado, 6: Archivado)
+        const COL_RETIRADO = 1;
+        const COL_PRESUPUESTO = 2;
+        const COL_RECOGIDA = 3;
+        const COL_EN_TALLER = 4;
+        const COL_ACABADO = 5;
+        const COL_ARCHIVADO = 6;
+        const TOTAL_COLS = 6;
+
+        const cols = [
+            "Vehículo retirado",
+            "Pendiente Presupuesto/peritacion",
+            "pendiente de recogida",
+            "en taller reparador",
+            "acabado / pdte facturar",
+            "archivado"
+        ];
+        const NOMBRES_COL_CORTOS = ["VEH. RETIRADO", "PDTE. PRESUP.", "PDTE. RECOGIDA", "EN TALLER", "ACABADO", "ARCHIVADO"];
+
         // Roles: ADMIN, ADMIN_LECTURA, APV Cars, Auto Bros
         const esPerfilAdmin = () => rolUsuario === 'ADMIN' || rolUsuario === 'ADMIN_LECTURA';
         const soyAdmin = () => rolUsuario === 'ADMIN';
+        const esTaller = () => rolUsuario === 'APV Cars' || rolUsuario === 'Auto Bros';
+        const puedeEditarBasico = () => soyAdmin() || esTaller();
 
         const LIMITE_ADJUNTOS_BYTES = 900000;
 
@@ -760,10 +811,42 @@
             return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)}`;
         }
 
+        // Calcula si la fecha de entrega es hoy ('hoy') o mañana ('manana' = hoy es entrega - 1)
+        function estadoFechaEntrega(fechaStr) {
+            if (!fechaStr) return '';
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fechaStr).trim());
+            if (!m) return '';
+            const entrega = new Date(+m[1], +m[2] - 1, +m[3]);
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            const diffDias = Math.round((entrega.getTime() - hoy.getTime()) / MS_DIA);
+            if (diffDias === 0) return 'hoy';
+            if (diffDias === 1) return 'manana';
+            return '';
+        }
+
+        // Compatibilidad automática: si un documento antiguo en Firestore no tiene 'esquemaV2',
+        // desplazamos sus columnas antiguas (1..5) +1 para que encajen en (2..6) sin perder datos.
+        function normalizarCocheEsquema(c) {
+            if (c.esquemaV2) return c;
+            const colAntigua = Number(c.columna) || 1;
+            const colNueva = Math.min(TOTAL_COLS, Math.max(2, colAntigua + 1));
+            const histNuevo = Array.isArray(c.historial) ? c.historial.map(m => {
+                const nDe = Number(m.de);
+                const nA = Number(m.a);
+                return {
+                    ...m,
+                    de: (nDe >= 1 && nDe <= 5) ? nDe + 1 : m.de,
+                    a: (nA >= 1 && nA <= 5) ? nA + 1 : m.a
+                };
+            }) : [];
+            return { ...c, columna: colNueva, historial: histNuevo, esquemaV2: true };
+        }
+
         function numColumna(v) {
             if (v === null || v === undefined || v === '') return null;
             const n = Number(v);
-            if (Number.isInteger(n) && n >= 1 && n <= 5) return n;
+            if (Number.isInteger(n) && n >= 1 && n <= TOTAL_COLS) return n;
             const s = String(v).trim().toLowerCase();
             const i = cols.findIndex(x => x.toLowerCase() === s);
             if (i >= 0) return i + 1;
@@ -788,10 +871,8 @@
         }
 
         function fechaReferenciaArchivo(c) {
-            return aMs(c.fechaArchivado) ?? ultimaEntradaEnColumna(c, 5) ?? aMs(c.fechaEntrega) ?? aMs(c.fechaEntradaIngreso);
+            return aMs(c.fechaArchivado) ?? ultimaEntradaEnColumna(c, COL_ARCHIVADO) ?? aMs(c.fechaEntrega) ?? aMs(c.fechaEntradaIngreso);
         }
-
-        const NOMBRES_COL_CORTOS = ["PDTE. PRESUP.", "PDTE. RECOGIDA", "EN TALLER", "ACABADO", "ARCHIVADO"];
 
         function diasCalendario(desdeMs, hastaMs) {
             const ini = ms => { const d = new Date(ms); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
@@ -801,13 +882,13 @@
         function entradaTallerMs(c) {
             const a = aMs(c.fechaEntradaTaller);
             if (a !== null) return a;
-            return c.columna === 3 ? ultimaEntradaEnColumna(c, 3) : null;
+            return c.columna === COL_EN_TALLER ? ultimaEntradaEnColumna(c, COL_EN_TALLER) : null;
         }
 
         function diasEnTaller(c) {
             const a = entradaTallerMs(c);
             if (a === null) return null;
-            if (c.columna === 3) return diasCalendario(a, Date.now());
+            if (c.columna === COL_EN_TALLER) return diasCalendario(a, Date.now());
             const b = aMs(c.fechaEntregaTaller);
             if (b === null || b - a < 1000) return null;
             return diasCalendario(a, b);
@@ -829,8 +910,8 @@
         }
 
         function guardarDb(idDoc, datos) {
-            if (!db || !soyAdmin()) return;
-            db.collection("vehiculos").doc(idDoc).update(datos).catch(err => {
+            if (!db || !puedeEditarBasico()) return;
+            db.collection("vehiculos").doc(idDoc).update({ ...datos, esquemaV2: true }).catch(err => {
                 console.error("Error al guardar:", err);
                 alert("No se pudo guardar en la base de datos. Permisos insuficientes o error de conexión.");
             });
@@ -847,14 +928,6 @@
             console.error("Error al inicializar Firebase:", e);
         }
 
-        const cols = [
-            "Pendiente Presupuesto/peritacion",
-            "pendiente de recogida",
-            "en taller reparador",
-            "acabado / pdte facturar",
-            "archivado"
-        ];
-
         // Observador de Estado de Autenticación mediante Firebase Auth
         function inicializarAuth() {
             if (!auth) return;
@@ -863,7 +936,6 @@
                 const modal = document.getElementById('login-modal');
                 if (user) {
                     usuarioActual = user;
-                    // Intentar obtener custom claim 'rol' o inferir según el email
                     try {
                         const idTokenResult = await user.getIdTokenResult();
                         rolUsuario = idTokenResult.claims.rol || determinarRolPorEmail(user.email);
@@ -887,7 +959,6 @@
             });
         }
 
-        // Método auxiliar para mapear el email a rol localmente si no hay Custom Claims
         function determinarRolPorEmail(email) {
             if (!email) return 'INVITADO';
             const mail = email.toLowerCase();
@@ -895,7 +966,7 @@
             if (mail.includes('lectura@')) return 'ADMIN_LECTURA';
             if (mail.includes('apv@')) return 'APV Cars';
             if (mail.includes('autobros@')) return 'Auto Bros';
-            return 'ADMIN'; // Rol por defecto asignado tras login exitoso
+            return 'ADMIN';
         }
 
         function iniciarSesion() {
@@ -992,7 +1063,9 @@
 
             db.collection("vehiculos").onSnapshot((snapshot) => {
                 coches = [];
-                snapshot.forEach((doc) => coches.push({ idDoc: doc.id, ...doc.data() }));
+                snapshot.forEach((doc) => {
+                    coches.push(normalizarCocheEsquema({ idDoc: doc.id, ...doc.data() }));
+                });
                 dibujar();
             }, (err) => {
                 console.error("Error de lectura en Firestore:", err);
@@ -1022,7 +1095,9 @@
         function cambiarFechaEntrega(idDoc, event, inputElem) {
             event.stopPropagation();
             const c = coches.find(x => x.idDoc === idDoc);
-            if (!c || !soyAdmin()) return;
+            if (!c) return;
+            const autorizado = soyAdmin() || (esTaller() && c.Taller === rolUsuario);
+            if (!autorizado) return;
             c.fechaEntrega = inputElem.value;
             guardarDb(idDoc, { fechaEntrega: c.fechaEntrega });
             dibujar();
@@ -1086,7 +1161,7 @@
                 });
 
                 let filtrados = coincidentes, ocultos = 0;
-                if (cNum === 5 && !verArchivadosAnteriores && !buscador) {
+                if (cNum === COL_ARCHIVADO && !verArchivadosAnteriores && !buscador) {
                     const ahora = new Date();
                     const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1).getTime();
                     filtrados = coincidentes.filter(c => {
@@ -1096,13 +1171,31 @@
                     ocultos = coincidentes.length - filtrados.length;
                 }
 
+                // Ordenar por fecha de entrega estimada de más reciente/cercana a más tardía en "EN TALLER REPARADOR"
+                if (cNum === COL_EN_TALLER) {
+                    filtrados = [...filtrados].sort((a, b) => {
+                        const msA = aMs(a.fechaEntrega);
+                        const msB = aMs(b.fechaEntrega);
+                        if (msA === null && msB === null) return 0;
+                        if (msA === null) return 1; // Sin fecha van al final
+                        if (msB === null) return -1;
+                        return msA - msB; // Ascendente: más reciente/próxima arriba, más tardía abajo
+                    });
+                }
+
                 let colHtml = `<div class="col-titulo col-titulo-${cNum}"><span>${esc(n.toUpperCase())}</span><span>${filtrados.length}</span></div>`;
-                if (cNum === 5 && (ocultos > 0 || verArchivadosAnteriores)) {
+                if (cNum === COL_ARCHIVADO && (ocultos > 0 || verArchivadosAnteriores)) {
                     colHtml += `<button type="button" class="btn-m" style="width:100%; margin-bottom:10px; padding:6px;" onclick="toggleArchivadosAnteriores()">${verArchivadosAnteriores ? '🙈 OCULTAR MESES ANTERIORES' : `📦 ${ocultos} DE MESES ANTERIORES OCULTOS · VER`}</button>`;
                 }
 
                 filtrados.forEach(c => {
                     const claseTaller = (c.Taller === "APV Cars") ? "t-apv" : "t-autobros";
+
+                    // Evaluar alerta de fecha solo en columnas activas antes de acabar/archivar (col 1 a COL_EN_TALLER)
+                    const estadoEntrega = (cNum <= COL_EN_TALLER) ? estadoFechaEntrega(c.fechaEntrega) : '';
+                    const claseTarjetaEntrega = estadoEntrega === 'hoy' ? 'entrega-hoy' : (estadoEntrega === 'manana' ? 'entrega-manana' : '');
+                    const claseBadgeEntrega = estadoEntrega === 'hoy' ? 'alerta-hoy' : (estadoEntrega === 'manana' ? 'alerta-manana' : '');
+                    const puedeEditarFecha = esAdminEscritura || (esTaller() && c.Taller === rolUsuario);
 
                     const urg = c.urgente ? `<span class="badge-urgente">🚨 URGENTE</span>` : '';
 
@@ -1127,7 +1220,7 @@
                         }
                     }
 
-                    const diasTaller = (cNum === 3) ? diasEnTaller(c) : null;
+                    const diasTaller = (cNum === COL_EN_TALLER) ? diasEnTaller(c) : null;
                     const badgeDias = diasTaller !== null
                         ? `<div style="display:flex; justify-content:flex-end; margin-top:6px;"><span class="badge-dias" title="${diasTaller} día(s) en taller reparador">${diasTaller}</span></div>`
                         : '';
@@ -1139,13 +1232,13 @@
                                 <button onclick="borrar('${esc(c.idDoc)}')" class="btn-b">BORRAR</button>
                                 <div>
                                     ${cNum > 1 ? `<button onclick="mover('${esc(c.idDoc)}', ${cNum-1})" class="btn-m">&lt;</button>` : ''}
-                                    ${cNum < 5 ? `<button onclick="mover('${esc(c.idDoc)}', ${cNum+1})" class="btn-m">&gt;</button>` : ''}
+                                    ${cNum < TOTAL_COLS ? `<button onclick="mover('${esc(c.idDoc)}', ${cNum+1})" class="btn-m">&gt;</button>` : ''}
                                 </div>
                             </div>`;
                     }
 
                     colHtml += `
-                        <div class="tarjeta ${claseTaller}"
+                        <div class="tarjeta ${claseTaller} ${claseTarjetaEntrega}"
                              draggable="${esAdminEscritura ? 'true' : 'false'}"
                              ondragstart="alComenzarArrastre(event, '${esc(c.idDoc)}')"
                              ondragend="alTerminarArrastre(event)"
@@ -1172,9 +1265,9 @@
                                     <span>ENTRADA TALLER:</span>
                                     <span class="valor">${formatoDia(entradaTallerMs(c))}</span>
                                 </div>
-                                <div class="badge-fecha-editable">
+                                <div class="badge-fecha-editable ${claseBadgeEntrega}">
                                     <span>ENTREGA EST.:</span>
-                                    <input type="date" value="${esc(c.fechaEntrega || '')}" onchange="cambiarFechaEntrega('${esc(c.idDoc)}', event, this)" ${!esAdminEscritura ? 'disabled' : ''}>
+                                    <input type="date" value="${esc(c.fechaEntrega || '')}" onchange="cambiarFechaEntrega('${esc(c.idDoc)}', event, this)" ${!puedeEditarFecha ? 'disabled' : ''}>
                                 </div>
                             </div>
 
@@ -1196,7 +1289,7 @@
             const sel = document.getElementById('stats-filtro-anio');
             const previo = sel.value || 'TODOS';
             const anios = new Set([new Date().getFullYear()]);
-            coches.filter(c => c.columna === 5).forEach(c => {
+            coches.filter(c => c.columna === COL_ARCHIVADO).forEach(c => {
                 const ms = fechaReferenciaArchivo(c);
                 if (ms !== null) anios.add(new Date(ms).getFullYear());
             });
@@ -1215,7 +1308,7 @@
             const fMes = document.getElementById('stats-filtro-mes').value;
 
             const cochesFiltrados = coches.filter(c => {
-                if (c.columna !== 5) return false;
+                if (c.columna !== COL_ARCHIVADO) return false;
                 if (fTaller !== 'TODOS' && c.Taller !== fTaller) return false;
                 if (fPag === 'COMPANIA' && !c.esCompania) return false;
                 if (fPag === 'CLIENTE' && !c.esCliente) return false;
@@ -1250,7 +1343,7 @@
 
             document.getElementById('st-total-coches').innerText = cochesFiltrados.length;
             document.getElementById('st-tiempo-medio').innerText = txtTiempo;
-            document.getElementById('st-tiempo-sub').innerText = `Col 3 a Col 4 · ${duraciones.length} de ${cochesFiltrados.length} coches`;
+            document.getElementById('st-tiempo-sub').innerText = `Taller a acabado · ${duraciones.length} de ${cochesFiltrados.length} coches`;
             document.getElementById('st-total-venta').innerText = eur(venta);
             document.getElementById('st-total-coste').innerText = eur(coste);
             document.getElementById('st-total-recambios').innerText = eur(recambios);
@@ -1355,6 +1448,7 @@
 
             const esAdminVista = esPerfilAdmin();
             const esAdminEscritura = soyAdmin();
+            const puedeComentar = esAdminEscritura || (esTaller() && c.Taller === rolUsuario);
 
             const modalContent = document.querySelector('.modal-content');
             modalContent.classList.remove('m-apv', 'm-autobros');
@@ -1390,7 +1484,9 @@
                 chk.checked = c.piezas && c.piezas.includes(chk.value);
             });
 
-            document.getElementById('modal-texto-libre').value = (c.textoLibre || '').toUpperCase();
+            const txtLibreElem = document.getElementById('modal-texto-libre');
+            txtLibreElem.value = (c.textoLibre || '').toUpperCase();
+            txtLibreElem.disabled = !puedeComentar;
 
             fotosTemporales = (c.fotos || []).map(f => {
                 if (typeof f === 'string') return { tipo: 'imagen', data: f, nombre: 'Foto' };
@@ -1401,7 +1497,7 @@
 
             document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdminEscritura);
             
-            document.getElementById('btn-guardar-modal').style.display = esAdminEscritura ? 'inline-block' : 'none';
+            document.getElementById('btn-guardar-modal').style.display = puedeComentar ? 'inline-block' : 'none';
             document.getElementById('seccion-adjuntar-archivos').style.display = esAdminEscritura ? 'block' : 'none';
 
             document.getElementById('modal-checklist').style.display = 'flex';
@@ -1467,7 +1563,6 @@
             });
         }
 
-        // Validación estricta de MIME types y límites de peso en cliente
         async function procesarArchivosFotos(archivos) {
             if (!archivos || !soyAdmin()) return;
             
@@ -1481,13 +1576,11 @@
             const lista = Array.from(archivos);
             for (const archivo of lista) {
                 try {
-                    // 1. Validar Tipo MIME
                     if (!tiposMimePermitidos.includes(archivo.type)) {
                         alert(`El archivo "${esc(archivo.name)}" no tiene un formato permitido (solamente imágenes, PDF, DOCX o TXT).`);
                         continue;
                     }
 
-                    // 2. Validar Peso Máximo por archivo (600 KB para no saturar Firestore Base64)
                     if (archivo.size > 600000) {
                         alert(`"${esc(archivo.name)}" excede el peso permitido de 600 KB.`);
                         continue;
@@ -1560,9 +1653,24 @@
         }
 
         function guardarChecklist() {
-            if(!cocheIdActual || !soyAdmin()) return;
+            if(!cocheIdActual) return;
             const c = coches.find(x => x.idDoc === cocheIdActual);
             if(!c) return;
+
+            const puedeComentar = soyAdmin() || (esTaller() && c.Taller === rolUsuario);
+            if (!puedeComentar) return;
+
+            if (!soyAdmin()) {
+                const datosTaller = {
+                    textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
+                    fechaUltimaModificacion: Date.now()
+                };
+                Object.assign(c, datosTaller);
+                guardarDb(cocheIdActual, datosTaller);
+                dibujar();
+                cerrarModal();
+                return;
+            }
 
             const datosActualizar = {
                 textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
@@ -1603,17 +1711,17 @@
             const ahora = Date.now();
             const cambios = { columna: nCol };
 
-            if (nCol < 3) {
+            if (nCol < COL_EN_TALLER) {
                 cambios.fechaEntradaTaller = null;
                 cambios.fechaEntregaTaller = null;
-            } else if (nCol === 3) {
-                if (antes < 3 || !aMs(c.fechaEntradaTaller)) cambios.fechaEntradaTaller = ahora;
+            } else if (nCol === COL_EN_TALLER) {
+                if (antes < COL_EN_TALLER || !aMs(c.fechaEntradaTaller)) cambios.fechaEntradaTaller = ahora;
                 cambios.fechaEntregaTaller = null;
-            } else if (antes < 4 || !aMs(c.fechaEntregaTaller)) {
+            } else if (antes < COL_ACABADO || !aMs(c.fechaEntregaTaller)) {
                 cambios.fechaEntregaTaller = ahora;
             }
 
-            cambios.fechaArchivado = (nCol === 5) ? ahora : null;
+            cambios.fechaArchivado = (nCol === COL_ARCHIVADO) ? ahora : null;
             cambios.historial = [...(Array.isArray(c.historial) ? c.historial : []), { de: antes, a: nCol, fecha: ahora }];
 
             Object.assign(c, cambios);
@@ -1658,7 +1766,8 @@
                 fechaEntregaTaller: null,
                 fechaArchivado: null,
                 historial: [],
-                columna: 1,
+                columna: COL_PRESUPUESTO, // Ingresa en "Pendiente Presupuesto/peritacion" (col 2)
+                esquemaV2: true,
                 piezas: [],
                 textoLibre: "",
                 fotos: []
