@@ -718,7 +718,7 @@
                 <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">📷 📁 ADJUNTAR FOTOS Y DOCUMENTOS (JPG, PNG, PDF, DOCX):</label>
                 <div id="drop-zone" class="drop-zone" ondragover="permitirSoltar(event)" ondragleave="salirZona(event)" ondrop="soltarArchivos(event)">
                     <p style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">📁 ARRASTRA ARCHIVOS O FOTOS AQUÍ O</p>
-                    <input type="file" id="input-fotos" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;" class="solo-admin">
+                    <input type="file" id="input-fotos" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;">
                     <div id="galeria-preview" class="galeria-adjuntos"></div>
                 </div>
             </div>
@@ -1604,7 +1604,7 @@
             document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdminEscritura);
             
             document.getElementById('btn-guardar-modal').style.display = puedeComentar ? 'inline-block' : 'none';
-            document.getElementById('seccion-adjuntar-archivos').style.display = esAdminEscritura ? 'block' : 'none';
+            document.getElementById('seccion-adjuntar-archivos').style.display = puedeComentar ? 'block' : 'none';
 
             document.getElementById('modal-checklist').style.display = 'flex';
         }
@@ -1620,24 +1620,24 @@
         }
 
         function permitirSoltar(e) { 
-            if (!soyAdmin()) return;
+            if (!puedeAdjuntarEnActual()) return;
             e.preventDefault(); 
             document.getElementById('drop-zone').classList.add('dragover'); 
         }
         function salirZona(e) { 
-            if (!soyAdmin()) return;
+            if (!puedeAdjuntarEnActual()) return;
             e.preventDefault(); 
             document.getElementById('drop-zone').classList.remove('dragover'); 
         }
         function soltarArchivos(e) {
-            if (!soyAdmin()) return;
+            if (!puedeAdjuntarEnActual()) return;
             e.preventDefault();
             document.getElementById('drop-zone').classList.remove('dragover');
             procesarArchivosFotos(e.dataTransfer.files);
         }
 
         function manejarSubidaArchivos(e) {
-            if (!soyAdmin()) return;
+            if (!puedeAdjuntarEnActual()) return;
             procesarArchivosFotos(e.target.files);
             e.target.value = '';
         }
@@ -1669,8 +1669,14 @@
             });
         }
 
+        function puedeAdjuntarEnActual() {
+            if (soyAdmin()) return true;
+            const c = coches.find(x => x.idDoc === cocheIdActual);
+            return !!(c && esTaller() && c.Taller === rolUsuario);
+        }
+
         async function procesarArchivosFotos(archivos) {
-            if (!archivos || !soyAdmin()) return;
+            if (!archivos || !puedeAdjuntarEnActual()) return;
             
             const tiposMimePermitidos = [
                 'image/jpeg', 'image/png', 'image/webp',
@@ -1694,7 +1700,7 @@
 
                     const esImagen = archivo.type.startsWith('image/');
                     const data = esImagen ? await comprimirImagen(archivo) : await leerComoDataURL(archivo);
-                    fotosTemporales.push({ tipo: esImagen ? 'imagen' : 'doc', nombre: archivo.name, data });
+                    fotosTemporales.push({ tipo: esImagen ? 'imagen' : 'doc', nombre: archivo.name, data, ...(esTaller() ? { _nuevo: true } : {}) });
                     actualizarGaleriaPreview();
                 } catch (e) {
                     alert(`Error al procesar el archivo "${esc(archivo.name)}".`);
@@ -1711,8 +1717,9 @@
                 const esImg = adj.tipo === 'imagen';
                 const srcData = adj.data;
                 const nombre = esc(adj.nombre || `Adjunto ${index+1}`);
-                const btnBorrar = esAdminEscritura ? `<button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
-                const btnBorrarDoc = esAdminEscritura ? `<button class="btn-del" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
+                const puedeBorrarAdj = esAdminEscritura || !!adj._nuevo;
+                const btnBorrar = puedeBorrarAdj ? `<button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
+                const btnBorrarDoc = puedeBorrarAdj ? `<button class="btn-del" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
 
                 if (esImg) {
                     cont.innerHTML += `
@@ -1747,7 +1754,8 @@
         }
 
         function eliminarFotoTemporal(index) {
-            if (!soyAdmin()) return;
+            const adjBorrar = fotosTemporales[index];
+            if (!soyAdmin() && !(adjBorrar && adjBorrar._nuevo)) return;
             fotosTemporales.splice(index, 1);
             actualizarGaleriaPreview();
         }
@@ -1767,8 +1775,15 @@
             if (!puedeComentar) return;
 
             if (!soyAdmin()) {
+                const fotosGuardar = fotosTemporales.map(({ _nuevo, ...resto }) => resto);
+                const pesoTaller = JSON.stringify(fotosGuardar).length;
+                if (pesoTaller > LIMITE_ADJUNTOS_BYTES) {
+                    alert(`Los adjuntos pesan demasiado (${Math.round(pesoTaller / 1024)} KB, máximo ${Math.round(LIMITE_ADJUNTOS_BYTES / 1024)} KB). Elimina alguno.`);
+                    return;
+                }
                 const datosTaller = {
                     textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
+                    fotos: fotosGuardar,
                     fechaUltimaModificacion: Date.now()
                 };
                 Object.assign(c, datosTaller);
