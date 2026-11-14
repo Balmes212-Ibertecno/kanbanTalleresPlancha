@@ -767,7 +767,7 @@
         const COL_RECOGIDA = 3;
         // false = el taller recibe todos los datos y la web solo oculta lo que no debe ver (no necesita índice).
         // true  = Firestore solo envía al taller sus coches de las columnas 2-4 (requiere índice Taller+columna y reglas).
-        const FILTRAR_EN_SERVIDOR = false;
+        const FILTRAR_EN_SERVIDOR = true;
         const COL_EN_TALLER = 4;
         const COL_ACABADO = 5;
         const COL_ARCHIVADO = 6;
@@ -1095,6 +1095,14 @@
                         }
                     });
                 }
+                if (esTaller()) {
+                    snapshot.docChanges().forEach(ch => {
+                        const a = ch.doc.data().avisoFechaAdmin;
+                        if (ch.type === 'modified' && a && !a.visto && !ch.doc.metadata.hasPendingWrites) {
+                            mostrarToast(`📅 Se ha cambiado la fecha de entrega de ${String(ch.doc.data().matricula || '').toUpperCase()}: ${fmtFechaCorta(a.anterior)} → ${fmtFechaCorta(a.nueva)}`);
+                        }
+                    });
+                }
                 coches = [];
                 snapshot.forEach((doc) => {
                     coches.push(normalizarCocheEsquema({ idDoc: doc.id, ...doc.data() }));
@@ -1105,7 +1113,8 @@
                 let ayuda = "Error de lectura: asegúrate de haber configurado las Reglas de Seguridad en Firebase Firestore.";
                 if (err && err.code === 'failed-precondition') ayuda = "Falta crear el índice en Firestore (Taller + columna). Créalo en Firebase > Firestore > Índices, o usa el enlace que aparece en la consola del navegador.";
                 else if (err && err.code === 'permission-denied') ayuda = "Permiso denegado: las reglas de Firestore no permiten esta lectura. Revisa las reglas publicadas.";
-                alert(ayuda + "\n\n[" + (err && err.code ? err.code : 'error') + "]");
+                const mailDiag = (auth && auth.currentUser) ? auth.currentUser.email : 'sin sesión';
+                alert(ayuda + "\n\n[" + (err && err.code ? err.code : 'error') + "]\nUsuario: " + mailDiag + "\nRol: " + rolUsuario + "\nFiltro servidor: " + (FILTRAR_EN_SERVIDOR ? 'SÍ' : 'NO'));
             });
         }
 
@@ -1153,6 +1162,15 @@
             dibujar();
         }
 
+        function marcarAvisoAdminVisto(idDoc, event) {
+            event.stopPropagation();
+            const c = coches.find(x => x.idDoc === idDoc);
+            if (!c || !c.avisoFechaAdmin || !esTaller() || c.Taller !== rolUsuario) return;
+            c.avisoFechaAdmin = { ...c.avisoFechaAdmin, visto: true };
+            guardarDb(idDoc, { avisoFechaAdmin: c.avisoFechaAdmin });
+            dibujar();
+        }
+
         function cambiarFechaEntrega(idDoc, event, inputElem) {
             event.stopPropagation(); // Evita que se propague y abra el modal de la tarjeta
             const c = coches.find(x => x.idDoc === idDoc);
@@ -1166,6 +1184,11 @@
             if (esTaller() && anterior !== c.fechaEntrega) {
                 datos.avisoFecha = { anterior, nueva: c.fechaEntrega, por: rolUsuario, ms: Date.now(), visto: false };
                 c.avisoFecha = datos.avisoFecha;
+            }
+            // Si la cambia el administrador, se deja un aviso para el taller
+            if (soyAdmin() && anterior !== c.fechaEntrega) {
+                datos.avisoFechaAdmin = { anterior, nueva: c.fechaEntrega, ms: Date.now(), visto: false };
+                c.avisoFechaAdmin = datos.avisoFechaAdmin;
             }
             guardarDb(idDoc, datos);
             dibujar();
@@ -1333,6 +1356,7 @@
                                     ${badgeDias}
                                 </div>
                             </div>
+                            ${(esTaller() && c.avisoFechaAdmin && !c.avisoFechaAdmin.visto) ? `<div class="aviso-fecha" onclick="event.stopPropagation()"><span>📅 La entrega se ha cambiado: ${esc(fmtFechaCorta(c.avisoFechaAdmin.anterior))} → ${esc(fmtFechaCorta(c.avisoFechaAdmin.nueva))}</span><button type="button" onclick="marcarAvisoAdminVisto('${esc(c.idDoc)}', event)">VISTO</button></div>` : ''}
                             ${(esAdminVista && c.avisoFecha && !c.avisoFecha.visto) ? `<div class="aviso-fecha" onclick="event.stopPropagation()"><span>📅 ${esc(c.avisoFecha.por)} cambió la entrega: ${esc(fmtFechaCorta(c.avisoFecha.anterior))} → ${esc(fmtFechaCorta(c.avisoFecha.nueva))}</span>${esAdminEscritura ? `<button type="button" onclick="marcarAvisoVisto('${esc(c.idDoc)}', event)">VISTO</button>` : ''}</div>` : ''}
                             <div style="display:flex; gap:4px; margin-top:2px; flex-wrap:wrap;">
                                 ${urg} ${badgeComp} ${badgeCli}
