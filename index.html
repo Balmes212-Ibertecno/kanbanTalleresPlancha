@@ -195,6 +195,14 @@
         @media (max-width: 1400px) { .tablero-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 800px) { .tablero-grid { grid-template-columns: 1fr; } }
 
+        .aviso-fecha { background:#422006; border:1px solid #f59e0b; color:#fde68a; border-radius:6px; padding:5px 7px; margin:4px 0; font-size:10px; font-weight:600; display:flex; justify-content:space-between; align-items:center; gap:6px; }
+        .aviso-fecha button { background:#f59e0b; color:#18181b; border:none; border-radius:4px; padding:2px 6px; font-size:10px; font-weight:800; cursor:pointer; }
+        #toast-avisos { position:fixed; top:12px; right:12px; z-index:99999; display:flex; flex-direction:column; gap:8px; max-width:340px; }
+        .toast-aviso { background:#f59e0b; color:#18181b; padding:10px 12px; border-radius:8px; font-size:12px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,.5); cursor:pointer; }
+
+        .tablero-grid.solo-3 { grid-template-columns: repeat(3, 1fr); }
+        @media (max-width: 800px) { .tablero-grid.solo-3 { grid-template-columns: 1fr; } }
+
         .columna-div { 
             background: #A3A3A3; 
             border: none; 
@@ -272,12 +280,19 @@
         }
 
         /* Alertas visuales de Fecha de Entrega */
-        .tarjeta.entrega-manana {
+        .tarjeta.entrega-pasado {
             background-color: #423815 !important;
             border-top: 1px solid #eab308 !important;
             border-right: 1px solid #eab308 !important;
             border-bottom: 1px solid #eab308 !important;
             box-shadow: 0 0 10px rgba(234, 179, 8, 0.35);
+        }
+        .tarjeta.entrega-manana {
+            background-color: #45260f !important;
+            border-top: 1px solid #f97316 !important;
+            border-right: 1px solid #f97316 !important;
+            border-bottom: 1px solid #f97316 !important;
+            box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
         }
         .tarjeta.entrega-hoy {
             background-color: #4a1c20 !important;
@@ -342,10 +357,16 @@
             font-weight: 600;
             outline: none !important;
         }
-        .badge-fecha-editable.alerta-manana input[type="date"] {
+        .badge-fecha-editable.alerta-pasado input[type="date"] {
             background-color: #eab308 !important;
             color: #18181b !important;
             border-color: #fef08a !important;
+            font-weight: 800 !important;
+        }
+        .badge-fecha-editable.alerta-manana input[type="date"] {
+            background-color: #f97316 !important;
+            color: #18181b !important;
+            border-color: #fdba74 !important;
             font-weight: 800 !important;
         }
         .badge-fecha-editable.alerta-hoy input[type="date"] {
@@ -744,6 +765,9 @@
         const COL_RETIRADO = 1;
         const COL_PRESUPUESTO = 2;
         const COL_RECOGIDA = 3;
+        // false = el taller recibe todos los datos y la web solo oculta lo que no debe ver (no necesita índice).
+        // true  = Firestore solo envía al taller sus coches de las columnas 2-4 (requiere índice Taller+columna y reglas).
+        const FILTRAR_EN_SERVIDOR = false;
         const COL_EN_TALLER = 4;
         const COL_ACABADO = 5;
         const COL_ARCHIVADO = 6;
@@ -816,6 +840,7 @@
             const diffDias = Math.round((entrega.getTime() - hoy.getTime()) / MS_DIA);
             if (diffDias === 0) return 'hoy';
             if (diffDias === 1) return 'manana';
+            if (diffDias === 2) return 'pasado';
             return '';
         }
 
@@ -1051,7 +1076,25 @@
         function escucharFirebase() {
             if (!db) return;
 
-            db.collection("vehiculos").onSnapshot((snapshot) => {
+            // Los talleres solo piden a Firebase sus vehículos en las columnas 2, 3 y 4
+            // (debe coincidir con las reglas de seguridad de Firestore)
+            let consulta = db.collection("vehiculos");
+            if (FILTRAR_EN_SERVIDOR && esTaller()) {
+                consulta = consulta
+                    .where("Taller", "==", rolUsuario)
+                    .where("columna", ">=", 2)
+                    .where("columna", "<=", COL_EN_TALLER);
+            }
+
+            consulta.onSnapshot((snapshot) => {
+                if (esPerfilAdmin()) {
+                    snapshot.docChanges().forEach(ch => {
+                        const a = ch.doc.data().avisoFecha;
+                        if (ch.type === 'modified' && a && !a.visto && !ch.doc.metadata.hasPendingWrites) {
+                            mostrarToast(`📅 ${a.por} ha cambiado la fecha de entrega de ${String(ch.doc.data().matricula || '').toUpperCase()}: ${fmtFechaCorta(a.anterior)} → ${fmtFechaCorta(a.nueva)}`);
+                        }
+                    });
+                }
                 coches = [];
                 snapshot.forEach((doc) => {
                     coches.push(normalizarCocheEsquema({ idDoc: doc.id, ...doc.data() }));
@@ -1059,7 +1102,10 @@
                 dibujar();
             }, (err) => {
                 console.error("Error de lectura en Firestore:", err);
-                alert("Error de lectura: asegúrate de haber configurado las Reglas de Seguridad en Firebase Firestore.");
+                let ayuda = "Error de lectura: asegúrate de haber configurado las Reglas de Seguridad en Firebase Firestore.";
+                if (err && err.code === 'failed-precondition') ayuda = "Falta crear el índice en Firestore (Taller + columna). Créalo en Firebase > Firestore > Índices, o usa el enlace que aparece en la consola del navegador.";
+                else if (err && err.code === 'permission-denied') ayuda = "Permiso denegado: las reglas de Firestore no permiten esta lectura. Revisa las reglas publicadas.";
+                alert(ayuda + "\n\n[" + (err && err.code ? err.code : 'error') + "]");
             });
         }
 
@@ -1082,14 +1128,46 @@
             dibujar();
         }
 
+        function fmtFechaCorta(v) {
+            const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ''));
+            return m ? `${m[3]}/${m[2]}/${m[1]}` : 'sin fecha';
+        }
+
+        function mostrarToast(texto) {
+            let cont = document.getElementById('toast-avisos');
+            if (!cont) { cont = document.createElement('div'); cont.id = 'toast-avisos'; document.body.appendChild(cont); }
+            const t = document.createElement('div');
+            t.className = 'toast-aviso';
+            t.textContent = texto;
+            t.onclick = () => t.remove();
+            cont.appendChild(t);
+            setTimeout(() => t.remove(), 15000);
+        }
+
+        function marcarAvisoVisto(idDoc, event) {
+            event.stopPropagation();
+            const c = coches.find(x => x.idDoc === idDoc);
+            if (!c || !c.avisoFecha || !soyAdmin()) return;
+            c.avisoFecha = { ...c.avisoFecha, visto: true };
+            guardarDb(idDoc, { avisoFecha: c.avisoFecha });
+            dibujar();
+        }
+
         function cambiarFechaEntrega(idDoc, event, inputElem) {
             event.stopPropagation(); // Evita que se propague y abra el modal de la tarjeta
             const c = coches.find(x => x.idDoc === idDoc);
             if (!c) return;
             const autorizado = soyAdmin() || (esTaller() && c.Taller === rolUsuario);
             if (!autorizado) return;
+            const anterior = c.fechaEntrega || '';
             c.fechaEntrega = inputElem.value;
-            guardarDb(idDoc, { fechaEntrega: c.fechaEntrega });
+            const datos = { fechaEntrega: c.fechaEntrega };
+            // Si la cambia un taller, se deja un aviso para el administrador
+            if (esTaller() && anterior !== c.fechaEntrega) {
+                datos.avisoFecha = { anterior, nueva: c.fechaEntrega, por: rolUsuario, ms: Date.now(), visto: false };
+                c.avisoFecha = datos.avisoFecha;
+            }
+            guardarDb(idDoc, datos);
             dibujar();
         }
 
@@ -1137,10 +1215,22 @@
             const tallerFiltroElem = document.getElementById('filtro-taller');
             const tallerFiltro = esAdminVista ? (tallerFiltroElem ? tallerFiltroElem.value : 'TODOS') : rolUsuario;
 
+            const soloTresCols = esTaller();
+            const gridElem = document.querySelector('.tablero-grid');
+            if (gridElem) gridElem.classList.toggle('solo-3', soloTresCols);
+
             cols.forEach((n, idx) => {
                 const cNum = idx + 1;
                 const columnaDiv = document.getElementById(`col-${cNum}`);
                 if (!columnaDiv) return;
+
+                // Los talleres (APV Cars / Auto Bros) solo ven las columnas 2, 3 y 4
+                if (soloTresCols && (cNum < 2 || cNum > COL_EN_TALLER)) {
+                    columnaDiv.style.display = 'none';
+                    columnaDiv.innerHTML = '';
+                    return;
+                }
+                columnaDiv.style.display = '';
 
                 const coincidentes = coches.filter(c => {
                     const mat = String(c.matricula || '').toUpperCase(), mod = String(c.modelo || '').toUpperCase();
@@ -1180,9 +1270,9 @@
                 filtrados.forEach(c => {
                     const claseTaller = (c.Taller === "APV Cars") ? "t-apv" : "t-autobros";
 
-                    const estadoEntrega = (cNum <= COL_EN_TALLER) ? estadoFechaEntrega(c.fechaEntrega) : '';
-                    const claseTarjetaEntrega = estadoEntrega === 'hoy' ? 'entrega-hoy' : (estadoEntrega === 'manana' ? 'entrega-manana' : '');
-                    const claseBadgeEntrega = estadoEntrega === 'hoy' ? 'alerta-hoy' : (estadoEntrega === 'manana' ? 'alerta-manana' : '');
+                    const estadoEntrega = (cNum === COL_EN_TALLER) ? estadoFechaEntrega(c.fechaEntrega) : '';
+                    const claseTarjetaEntrega = estadoEntrega ? `entrega-${estadoEntrega}` : '';
+                    const claseBadgeEntrega = estadoEntrega ? `alerta-${estadoEntrega}` : '';
                     const puedeEditarFecha = esAdminEscritura || (esTaller() && c.Taller === rolUsuario);
 
                     const urg = c.urgente ? `<span class="badge-urgente">🚨 URGENTE</span>` : '';
@@ -1207,7 +1297,7 @@
 
                         if (vTotal > 0 || cTotal > 0 || rTotal > 0) {
                             infoEconomica = `<div style="font-size:9px; font-weight:700; color:#38bdf8; margin-top:3px; background:#181d22; padding:2px 4px; border-radius:3px; border:1px solid #334155;">
-                                💶 V.ZSUB: ${vTotal.toFixed(0)}€ | Rec: ${rTotal.toFixed(0)}€ | C: ${cTotal.toFixed(0)}€
+                                💶 Venta: ${vTotal.toFixed(0)}€ | Rec: ${rTotal.toFixed(0)}€ | Coste: ${cTotal.toFixed(0)}€
                             </div>`;
                         }
                     }
@@ -1243,6 +1333,7 @@
                                     ${badgeDias}
                                 </div>
                             </div>
+                            ${(esAdminVista && c.avisoFecha && !c.avisoFecha.visto) ? `<div class="aviso-fecha" onclick="event.stopPropagation()"><span>📅 ${esc(c.avisoFecha.por)} cambió la entrega: ${esc(fmtFechaCorta(c.avisoFecha.anterior))} → ${esc(fmtFechaCorta(c.avisoFecha.nueva))}</span>${esAdminEscritura ? `<button type="button" onclick="marcarAvisoVisto('${esc(c.idDoc)}', event)">VISTO</button>` : ''}</div>` : ''}
                             <div style="display:flex; gap:4px; margin-top:2px; flex-wrap:wrap;">
                                 ${urg} ${badgeComp} ${badgeCli}
                             </div>
