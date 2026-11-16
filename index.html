@@ -195,14 +195,6 @@
         @media (max-width: 1400px) { .tablero-grid { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 800px) { .tablero-grid { grid-template-columns: 1fr; } }
 
-        .aviso-fecha { background:#422006; border:1px solid #f59e0b; color:#fde68a; border-radius:6px; padding:5px 7px; margin:4px 0; font-size:10px; font-weight:600; display:flex; justify-content:space-between; align-items:center; gap:6px; }
-        .aviso-fecha button { background:#f59e0b; color:#18181b; border:none; border-radius:4px; padding:2px 6px; font-size:10px; font-weight:800; cursor:pointer; }
-        #toast-avisos { position:fixed; top:12px; right:12px; z-index:99999; display:flex; flex-direction:column; gap:8px; max-width:340px; }
-        .toast-aviso { background:#f59e0b; color:#18181b; padding:10px 12px; border-radius:8px; font-size:12px; font-weight:700; box-shadow:0 4px 16px rgba(0,0,0,.5); cursor:pointer; }
-
-        .tablero-grid.solo-3 { grid-template-columns: repeat(3, 1fr); }
-        @media (max-width: 800px) { .tablero-grid.solo-3 { grid-template-columns: 1fr; } }
-
         .columna-div { 
             background: #A3A3A3; 
             border: none; 
@@ -280,19 +272,12 @@
         }
 
         /* Alertas visuales de Fecha de Entrega */
-        .tarjeta.entrega-pasado {
+        .tarjeta.entrega-manana {
             background-color: #423815 !important;
             border-top: 1px solid #eab308 !important;
             border-right: 1px solid #eab308 !important;
             border-bottom: 1px solid #eab308 !important;
             box-shadow: 0 0 10px rgba(234, 179, 8, 0.35);
-        }
-        .tarjeta.entrega-manana {
-            background-color: #45260f !important;
-            border-top: 1px solid #f97316 !important;
-            border-right: 1px solid #f97316 !important;
-            border-bottom: 1px solid #f97316 !important;
-            box-shadow: 0 0 10px rgba(249, 115, 22, 0.4);
         }
         .tarjeta.entrega-hoy {
             background-color: #4a1c20 !important;
@@ -357,16 +342,10 @@
             font-weight: 600;
             outline: none !important;
         }
-        .badge-fecha-editable.alerta-pasado input[type="date"] {
+        .badge-fecha-editable.alerta-manana input[type="date"] {
             background-color: #eab308 !important;
             color: #18181b !important;
             border-color: #fef08a !important;
-            font-weight: 800 !important;
-        }
-        .badge-fecha-editable.alerta-manana input[type="date"] {
-            background-color: #f97316 !important;
-            color: #18181b !important;
-            border-color: #fdba74 !important;
             font-weight: 800 !important;
         }
         .badge-fecha-editable.alerta-hoy input[type="date"] {
@@ -718,7 +697,7 @@
                 <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">📷 📁 ADJUNTAR FOTOS Y DOCUMENTOS (JPG, PNG, PDF, DOCX):</label>
                 <div id="drop-zone" class="drop-zone" ondragover="permitirSoltar(event)" ondragleave="salirZona(event)" ondrop="soltarArchivos(event)">
                     <p style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">📁 ARRASTRA ARCHIVOS O FOTOS AQUÍ O</p>
-                    <input type="file" id="input-fotos" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;">
+                    <input type="file" id="input-fotos" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;" class="solo-admin">
                     <div id="galeria-preview" class="galeria-adjuntos"></div>
                 </div>
             </div>
@@ -765,9 +744,6 @@
         const COL_RETIRADO = 1;
         const COL_PRESUPUESTO = 2;
         const COL_RECOGIDA = 3;
-        // false = el taller recibe todos los datos y la web solo oculta lo que no debe ver (no necesita índice).
-        // true  = Firestore solo envía al taller sus coches de las columnas 2-4 (requiere índice Taller+columna y reglas).
-        const FILTRAR_EN_SERVIDOR = true;
         const COL_EN_TALLER = 4;
         const COL_ACABADO = 5;
         const COL_ARCHIVADO = 6;
@@ -840,7 +816,6 @@
             const diffDias = Math.round((entrega.getTime() - hoy.getTime()) / MS_DIA);
             if (diffDias === 0) return 'hoy';
             if (diffDias === 1) return 'manana';
-            if (diffDias === 2) return 'pasado';
             return '';
         }
 
@@ -1076,33 +1051,7 @@
         function escucharFirebase() {
             if (!db) return;
 
-            // Los talleres solo piden a Firebase sus vehículos en las columnas 2, 3 y 4
-            // (debe coincidir con las reglas de seguridad de Firestore)
-            let consulta = db.collection("vehiculos");
-            if (FILTRAR_EN_SERVIDOR && esTaller()) {
-                consulta = consulta
-                    .where("Taller", "==", rolUsuario)
-                    .where("columna", ">=", 2)
-                    .where("columna", "<=", COL_EN_TALLER);
-            }
-
-            consulta.onSnapshot((snapshot) => {
-                if (esPerfilAdmin()) {
-                    snapshot.docChanges().forEach(ch => {
-                        const a = ch.doc.data().avisoFecha;
-                        if (ch.type === 'modified' && a && !a.visto && !ch.doc.metadata.hasPendingWrites) {
-                            mostrarToast(`📅 ${a.por} ha cambiado la fecha de entrega de ${String(ch.doc.data().matricula || '').toUpperCase()}: ${fmtFechaCorta(a.anterior)} → ${fmtFechaCorta(a.nueva)}`);
-                        }
-                    });
-                }
-                if (esTaller()) {
-                    snapshot.docChanges().forEach(ch => {
-                        const a = ch.doc.data().avisoFechaAdmin;
-                        if (ch.type === 'modified' && a && !a.visto && !ch.doc.metadata.hasPendingWrites) {
-                            mostrarToast(`📅 Se ha cambiado la fecha de entrega de ${String(ch.doc.data().matricula || '').toUpperCase()}: ${fmtFechaCorta(a.anterior)} → ${fmtFechaCorta(a.nueva)}`);
-                        }
-                    });
-                }
+            db.collection("vehiculos").onSnapshot((snapshot) => {
                 coches = [];
                 snapshot.forEach((doc) => {
                     coches.push(normalizarCocheEsquema({ idDoc: doc.id, ...doc.data() }));
@@ -1110,11 +1059,7 @@
                 dibujar();
             }, (err) => {
                 console.error("Error de lectura en Firestore:", err);
-                let ayuda = "Error de lectura: asegúrate de haber configurado las Reglas de Seguridad en Firebase Firestore.";
-                if (err && err.code === 'failed-precondition') ayuda = "Falta crear el índice en Firestore (Taller + columna). Créalo en Firebase > Firestore > Índices, o usa el enlace que aparece en la consola del navegador.";
-                else if (err && err.code === 'permission-denied') ayuda = "Permiso denegado: las reglas de Firestore no permiten esta lectura. Revisa las reglas publicadas.";
-                const mailDiag = (auth && auth.currentUser) ? auth.currentUser.email : 'sin sesión';
-                alert(ayuda + "\n\n[" + (err && err.code ? err.code : 'error') + "]\nUsuario: " + mailDiag + "\nRol: " + rolUsuario + "\nFiltro servidor: " + (FILTRAR_EN_SERVIDOR ? 'SÍ' : 'NO'));
+                alert("Error de lectura: asegúrate de haber configurado las Reglas de Seguridad en Firebase Firestore.");
             });
         }
 
@@ -1137,60 +1082,14 @@
             dibujar();
         }
 
-        function fmtFechaCorta(v) {
-            const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ''));
-            return m ? `${m[3]}/${m[2]}/${m[1]}` : 'sin fecha';
-        }
-
-        function mostrarToast(texto) {
-            let cont = document.getElementById('toast-avisos');
-            if (!cont) { cont = document.createElement('div'); cont.id = 'toast-avisos'; document.body.appendChild(cont); }
-            const t = document.createElement('div');
-            t.className = 'toast-aviso';
-            t.textContent = texto;
-            t.onclick = () => t.remove();
-            cont.appendChild(t);
-            setTimeout(() => t.remove(), 15000);
-        }
-
-        function marcarAvisoVisto(idDoc, event) {
-            event.stopPropagation();
-            const c = coches.find(x => x.idDoc === idDoc);
-            if (!c || !c.avisoFecha || !soyAdmin()) return;
-            c.avisoFecha = { ...c.avisoFecha, visto: true };
-            guardarDb(idDoc, { avisoFecha: c.avisoFecha });
-            dibujar();
-        }
-
-        function marcarAvisoAdminVisto(idDoc, event) {
-            event.stopPropagation();
-            const c = coches.find(x => x.idDoc === idDoc);
-            if (!c || !c.avisoFechaAdmin || !esTaller() || c.Taller !== rolUsuario) return;
-            c.avisoFechaAdmin = { ...c.avisoFechaAdmin, visto: true };
-            guardarDb(idDoc, { avisoFechaAdmin: c.avisoFechaAdmin });
-            dibujar();
-        }
-
         function cambiarFechaEntrega(idDoc, event, inputElem) {
             event.stopPropagation(); // Evita que se propague y abra el modal de la tarjeta
             const c = coches.find(x => x.idDoc === idDoc);
             if (!c) return;
             const autorizado = soyAdmin() || (esTaller() && c.Taller === rolUsuario);
             if (!autorizado) return;
-            const anterior = c.fechaEntrega || '';
             c.fechaEntrega = inputElem.value;
-            const datos = { fechaEntrega: c.fechaEntrega };
-            // Si la cambia un taller, se deja un aviso para el administrador
-            if (esTaller() && anterior !== c.fechaEntrega) {
-                datos.avisoFecha = { anterior, nueva: c.fechaEntrega, por: rolUsuario, ms: Date.now(), visto: false };
-                c.avisoFecha = datos.avisoFecha;
-            }
-            // Si la cambia el administrador, se deja un aviso para el taller
-            if (soyAdmin() && anterior !== c.fechaEntrega) {
-                datos.avisoFechaAdmin = { anterior, nueva: c.fechaEntrega, ms: Date.now(), visto: false };
-                c.avisoFechaAdmin = datos.avisoFechaAdmin;
-            }
-            guardarDb(idDoc, datos);
+            guardarDb(idDoc, { fechaEntrega: c.fechaEntrega });
             dibujar();
         }
 
@@ -1238,22 +1137,10 @@
             const tallerFiltroElem = document.getElementById('filtro-taller');
             const tallerFiltro = esAdminVista ? (tallerFiltroElem ? tallerFiltroElem.value : 'TODOS') : rolUsuario;
 
-            const soloTresCols = esTaller();
-            const gridElem = document.querySelector('.tablero-grid');
-            if (gridElem) gridElem.classList.toggle('solo-3', soloTresCols);
-
             cols.forEach((n, idx) => {
                 const cNum = idx + 1;
                 const columnaDiv = document.getElementById(`col-${cNum}`);
                 if (!columnaDiv) return;
-
-                // Los talleres (APV Cars / Auto Bros) solo ven las columnas 2, 3 y 4
-                if (soloTresCols && (cNum < 2 || cNum > COL_EN_TALLER)) {
-                    columnaDiv.style.display = 'none';
-                    columnaDiv.innerHTML = '';
-                    return;
-                }
-                columnaDiv.style.display = '';
 
                 const coincidentes = coches.filter(c => {
                     const mat = String(c.matricula || '').toUpperCase(), mod = String(c.modelo || '').toUpperCase();
@@ -1293,9 +1180,9 @@
                 filtrados.forEach(c => {
                     const claseTaller = (c.Taller === "APV Cars") ? "t-apv" : "t-autobros";
 
-                    const estadoEntrega = (cNum === COL_EN_TALLER) ? estadoFechaEntrega(c.fechaEntrega) : '';
-                    const claseTarjetaEntrega = estadoEntrega ? `entrega-${estadoEntrega}` : '';
-                    const claseBadgeEntrega = estadoEntrega ? `alerta-${estadoEntrega}` : '';
+                    const estadoEntrega = (cNum <= COL_EN_TALLER) ? estadoFechaEntrega(c.fechaEntrega) : '';
+                    const claseTarjetaEntrega = estadoEntrega === 'hoy' ? 'entrega-hoy' : (estadoEntrega === 'manana' ? 'entrega-manana' : '');
+                    const claseBadgeEntrega = estadoEntrega === 'hoy' ? 'alerta-hoy' : (estadoEntrega === 'manana' ? 'alerta-manana' : '');
                     const puedeEditarFecha = esAdminEscritura || (esTaller() && c.Taller === rolUsuario);
 
                     const urg = c.urgente ? `<span class="badge-urgente">🚨 URGENTE</span>` : '';
@@ -1320,7 +1207,7 @@
 
                         if (vTotal > 0 || cTotal > 0 || rTotal > 0) {
                             infoEconomica = `<div style="font-size:9px; font-weight:700; color:#38bdf8; margin-top:3px; background:#181d22; padding:2px 4px; border-radius:3px; border:1px solid #334155;">
-                                💶 Venta: ${vTotal.toFixed(0)}€ | Rec: ${rTotal.toFixed(0)}€ | Coste: ${cTotal.toFixed(0)}€
+                                💶 V.ZSUB: ${vTotal.toFixed(0)}€ | Rec: ${rTotal.toFixed(0)}€ | C: ${cTotal.toFixed(0)}€
                             </div>`;
                         }
                     }
@@ -1356,8 +1243,6 @@
                                     ${badgeDias}
                                 </div>
                             </div>
-                            ${(esTaller() && c.avisoFechaAdmin && !c.avisoFechaAdmin.visto) ? `<div class="aviso-fecha" onclick="event.stopPropagation()"><span>📅 La entrega se ha cambiado: ${esc(fmtFechaCorta(c.avisoFechaAdmin.anterior))} → ${esc(fmtFechaCorta(c.avisoFechaAdmin.nueva))}</span><button type="button" onclick="marcarAvisoAdminVisto('${esc(c.idDoc)}', event)">VISTO</button></div>` : ''}
-                            ${(esAdminVista && c.avisoFecha && !c.avisoFecha.visto) ? `<div class="aviso-fecha" onclick="event.stopPropagation()"><span>📅 ${esc(c.avisoFecha.por)} cambió la entrega: ${esc(fmtFechaCorta(c.avisoFecha.anterior))} → ${esc(fmtFechaCorta(c.avisoFecha.nueva))}</span>${esAdminEscritura ? `<button type="button" onclick="marcarAvisoVisto('${esc(c.idDoc)}', event)">VISTO</button>` : ''}</div>` : ''}
                             <div style="display:flex; gap:4px; margin-top:2px; flex-wrap:wrap;">
                                 ${urg} ${badgeComp} ${badgeCli}
                             </div>
@@ -1604,7 +1489,7 @@
             document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdminEscritura);
             
             document.getElementById('btn-guardar-modal').style.display = puedeComentar ? 'inline-block' : 'none';
-            document.getElementById('seccion-adjuntar-archivos').style.display = puedeComentar ? 'block' : 'none';
+            document.getElementById('seccion-adjuntar-archivos').style.display = esAdminEscritura ? 'block' : 'none';
 
             document.getElementById('modal-checklist').style.display = 'flex';
         }
@@ -1620,24 +1505,24 @@
         }
 
         function permitirSoltar(e) { 
-            if (!puedeAdjuntarEnActual()) return;
+            if (!soyAdmin()) return;
             e.preventDefault(); 
             document.getElementById('drop-zone').classList.add('dragover'); 
         }
         function salirZona(e) { 
-            if (!puedeAdjuntarEnActual()) return;
+            if (!soyAdmin()) return;
             e.preventDefault(); 
             document.getElementById('drop-zone').classList.remove('dragover'); 
         }
         function soltarArchivos(e) {
-            if (!puedeAdjuntarEnActual()) return;
+            if (!soyAdmin()) return;
             e.preventDefault();
             document.getElementById('drop-zone').classList.remove('dragover');
             procesarArchivosFotos(e.dataTransfer.files);
         }
 
         function manejarSubidaArchivos(e) {
-            if (!puedeAdjuntarEnActual()) return;
+            if (!soyAdmin()) return;
             procesarArchivosFotos(e.target.files);
             e.target.value = '';
         }
@@ -1669,14 +1554,8 @@
             });
         }
 
-        function puedeAdjuntarEnActual() {
-            if (soyAdmin()) return true;
-            const c = coches.find(x => x.idDoc === cocheIdActual);
-            return !!(c && esTaller() && c.Taller === rolUsuario);
-        }
-
         async function procesarArchivosFotos(archivos) {
-            if (!archivos || !puedeAdjuntarEnActual()) return;
+            if (!archivos || !soyAdmin()) return;
             
             const tiposMimePermitidos = [
                 'image/jpeg', 'image/png', 'image/webp',
@@ -1700,7 +1579,7 @@
 
                     const esImagen = archivo.type.startsWith('image/');
                     const data = esImagen ? await comprimirImagen(archivo) : await leerComoDataURL(archivo);
-                    fotosTemporales.push({ tipo: esImagen ? 'imagen' : 'doc', nombre: archivo.name, data, ...(esTaller() ? { _nuevo: true } : {}) });
+                    fotosTemporales.push({ tipo: esImagen ? 'imagen' : 'doc', nombre: archivo.name, data });
                     actualizarGaleriaPreview();
                 } catch (e) {
                     alert(`Error al procesar el archivo "${esc(archivo.name)}".`);
@@ -1717,9 +1596,8 @@
                 const esImg = adj.tipo === 'imagen';
                 const srcData = adj.data;
                 const nombre = esc(adj.nombre || `Adjunto ${index+1}`);
-                const puedeBorrarAdj = esAdminEscritura || !!adj._nuevo;
-                const btnBorrar = puedeBorrarAdj ? `<button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
-                const btnBorrarDoc = puedeBorrarAdj ? `<button class="btn-del" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
+                const btnBorrar = esAdminEscritura ? `<button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
+                const btnBorrarDoc = esAdminEscritura ? `<button class="btn-del" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
 
                 if (esImg) {
                     cont.innerHTML += `
@@ -1754,8 +1632,7 @@
         }
 
         function eliminarFotoTemporal(index) {
-            const adjBorrar = fotosTemporales[index];
-            if (!soyAdmin() && !(adjBorrar && adjBorrar._nuevo)) return;
+            if (!soyAdmin()) return;
             fotosTemporales.splice(index, 1);
             actualizarGaleriaPreview();
         }
@@ -1775,15 +1652,8 @@
             if (!puedeComentar) return;
 
             if (!soyAdmin()) {
-                const fotosGuardar = fotosTemporales.map(({ _nuevo, ...resto }) => resto);
-                const pesoTaller = JSON.stringify(fotosGuardar).length;
-                if (pesoTaller > LIMITE_ADJUNTOS_BYTES) {
-                    alert(`Los adjuntos pesan demasiado (${Math.round(pesoTaller / 1024)} KB, máximo ${Math.round(LIMITE_ADJUNTOS_BYTES / 1024)} KB). Elimina alguno.`);
-                    return;
-                }
                 const datosTaller = {
                     textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
-                    fotos: fotosGuardar,
                     fechaUltimaModificacion: Date.now()
                 };
                 Object.assign(c, datosTaller);
@@ -1895,7 +1765,7 @@
             };
 
             if (!db) { alert("Sin conexión con la base de datos."); return; }
-            db.collection("vehiculos").add(nuevoCoshse || nuevoCoche).catch(err => { console.error(err); alert("No se pudo crear el vehículo. Revisa las reglas de seguridad."); });
+            db.collection("vehiculos").add(nuevoCoche || nuevoCoche).catch(err => { console.error(err); alert("No se pudo crear el vehículo. Revisa las reglas de seguridad."); });
 
             matInput.value = '';
             modInput.value = '';
