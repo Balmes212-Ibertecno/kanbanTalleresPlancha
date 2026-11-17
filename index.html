@@ -293,6 +293,9 @@
             box-shadow: 0 0 0 2px #3d454f, 0 2px 6px rgba(0,0,0,0.5);
         }
         .badge-urgente { background-color: #b91c1c; color: #ffffff; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 9px; border: 1px solid #ef4444; display: inline-block; }
+        .badge-aviso-cambio { background-color: #f59e0b; color: #18181b; padding: 2px 6px; border-radius: 3px; font-weight: 800; font-size: 9px; border: 1px solid #fef08a; display: inline-block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
         .badge-pagador { padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 9px; display: inline-block; }
         .badge-compania { background-color: #2563eb; color: #ffffff; border: 1px solid #60a5fa; }
         .badge-cliente { background-color: #ca8a04; color: #ffffff; border: 1px solid #facc15; }
@@ -607,6 +610,28 @@
                 </div>
             </div>
 
+            <!-- BLOQUE RECAMBIOS Y FECHAS (Editable por Admin y Taller) -->
+            <div style="background: #1e242b; border: 1px solid #eab308; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+                <h4 style="font-size: 11px; color: #facc15; text-transform: uppercase; margin-bottom: 8px;">🔩 GESTIÓN DE RECAMBIOS Y PEDIDOS</h4>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                    <div style="background: #272d34; padding: 8px; border-radius: 4px; border: 1px solid #3b424a;">
+                        <label style="color: #fca5a5; font-weight: 700; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <input type="checkbox" id="modal-recambio-pendiente" style="width: 15px; height: 15px; accent-color: #ef4444; cursor: pointer;"> ⚠️ RECAMBIO PENDIENTE
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <div>
+                            <label style="font-size: 9px; color:#cbd5e1; display:block; margin-bottom: 2px;">FECHA PEDIDO RECAMBIOS:</label>
+                            <input type="date" id="modal-fecha-pedido-recambios" style="padding: 4px 6px; font-size: 11px; background: #272d34; color: #fff; border: 1px solid #555f6d; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 9px; color:#cbd5e1; display:block; margin-bottom: 2px;">FECHA RECEPCIÓN RECAMBIOS:</label>
+                            <input type="date" id="modal-fecha-recepcion-recambios" style="padding: 4px 6px; font-size: 11px; background: #272d34; color: #fff; border: 1px solid #555f6d; border-radius: 4px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="modal-seccion-admin" style="background: #181d22; border: 1px solid #0284c7; border-radius: 6px; padding: 12px; margin-bottom: 12px; display: none;">
                 <h4 style="font-size: 11px; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px;">💰 Gestión Económica por Pagador (Solo Admin)</h4>
                 
@@ -797,38 +822,17 @@
         }
 
         function estadoFechaEntrega(fechaStr) {
-    if (!fechaStr) return '';
-    let anio, mes, dia;
-
-    // Detectar si viene en formato AAAA-MM-DD (del input type="date")
-    const matchIso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fechaStr).trim());
-    if (matchIso) {
-        anio = +matchIso[1];
-        mes = +matchIso[2] - 1;
-        dia = +matchIso[3];
-    } else {
-        // Detectar si viene en formato DD/MM/AAAA (o DD/MM/AA)
-        const matchBarra = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(fechaStr).trim());
-        if (matchBarra) {
-            dia = +matchBarra[1];
-            mes = +matchBarra[2] - 1;
-            anio = +matchBarra[3];
-            if (anio < 100) anio += 2000;
-        } else {
+            if (!fechaStr) return '';
+            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fechaStr).trim());
+            if (!m) return '';
+            const entrega = new Date(+m[1], +m[2] - 1, +m[3]);
+            const hoy = new Date();
+            hoy.setHours(0, 0, 0, 0);
+            const diffDias = Math.round((entrega.getTime() - hoy.getTime()) / MS_DIA);
+            if (diffDias === 0) return 'hoy';
+            if (diffDias === 1) return 'manana';
             return '';
         }
-    }
-
-    const entrega = new Date(anio, mes, dia);
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    entrega.setHours(0, 0, 0, 0);
-
-    const diffDias = Math.round((entrega.getTime() - hoy.getTime()) / MS_DIA);
-    if (diffDias === 0) return 'hoy';
-    if (diffDias === 1) return 'manana';
-    return '';
-}
 
         function normalizarCocheEsquema(c) {
             if (c.esquemaV2) return c;
@@ -1068,7 +1072,6 @@
                     coches.push(normalizarCocheEsquema({ idDoc: doc.id, ...doc.data() }));
                 });
 
-                // FILTRO ESTRICTO PARA TALLERES: Solo ven su taller y estrictamente entre columnas 2 y 4
                 if (esTaller()) {
                     coches = coches.filter(c => c.Taller === rolUsuario && c.columna >= 2 && c.columna <= 4);
                 }
@@ -1105,8 +1108,23 @@
             if (!c) return;
             const autorizado = soyAdmin() || (esTaller() && c.Taller === rolUsuario);
             if (!autorizado) return;
-            c.fechaEntrega = inputElem.value;
-            guardarDb(idDoc, { fechaEntrega: c.fechaEntrega });
+
+            const nuevaFecha = inputElem.value;
+            if (c.fechaEntrega === nuevaFecha) return;
+
+            // Lógica de aviso de cambio cruzado
+            const actualizadoPorTaller = esTaller();
+            const datosUpdate = {
+                fechaEntrega: nuevaFecha,
+                avisoModificacionFecha: true,
+                modificadoPor: actualizadoPorTaller ? 'taller' : 'admin'
+            };
+
+            c.fechaEntrega = nuevaFecha;
+            c.avisoModificacionFecha = true;
+            c.modificadoPor = datosUpdate.modificadoPor;
+
+            guardarDb(idDoc, datosUpdate);
             dibujar();
         }
 
@@ -1202,6 +1220,17 @@
                     const puedeEditarFecha = esAdminEscritura || (esTaller() && c.Taller === rolUsuario);
 
                     const urg = c.urgente ? `<span class="badge-urgente">🚨 URGENTE</span>` : '';
+                    const recPend = c.recambioPendiente ? `<span class="badge-urgente" style="background:#eab308; color:#18181b; border-color:#fef08a;">🔩 RECAMBIO PENDIENTE</span>` : '';
+
+                    // Lógica para mostrar el aviso de actualización según el rol visualizado
+                    let badgeAviso = '';
+                    if (c.avisoModificacionFecha) {
+                        if (esAdminVista && c.modificadoPor === 'taller') {
+                            badgeAviso = `<span class="badge-aviso-cambio" title="El taller cambió la fecha de entrega">⚠️ FECHA CAMBIADA POR TALLER</span>`;
+                        } else if (esTaller() && c.modificadoPor === 'admin') {
+                            badgeAviso = `<span class="badge-aviso-cambio" title="El Admin cambió la fecha de entrega">⚠️ FECHA CAMBIADA POR ADMIN</span>`;
+                        }
+                    }
 
                     const badgeComp = c.esCompania ? `<span class="badge-pagador badge-compania">🏢 CIA. ASEGURADORA</span>` : '';
                     const badgeCli = c.esCliente ? `<span class="badge-pagador badge-cliente">👤 CLIENTE</span>` : '';
@@ -1259,7 +1288,7 @@
                                 </div>
                             </div>
                             <div style="display:flex; gap:4px; margin-top:2px; flex-wrap:wrap;">
-                                ${urg} ${badgeComp} ${badgeCli}
+                                ${urg} ${recPend} ${badgeAviso} ${badgeComp} ${badgeCli}
                             </div>
                             ${infoEconomica}
 
@@ -1452,6 +1481,14 @@
             const c = coches.find(x => x.idDoc === idDoc);
             if(!c) return;
 
+            // Al abrir la tarjeta, limpiamos el aviso de cambio correspondiente para que desaparezca la alerta al leerlo
+            if (c.avisoModificacionFecha) {
+                if ((esPerfilAdmin() && c.modificadoPor === 'taller') || (esTaller() && c.modificadoPor === 'admin')) {
+                    c.avisoModificacionFecha = false;
+                    guardarDb(idDoc, { avisoModificacionFecha: false });
+                }
+            }
+
             const esAdminVista = esPerfilAdmin();
             const esAdminEscritura = soyAdmin();
             const puedeComentar = esAdminEscritura || (esTaller() && c.Taller === rolUsuario);
@@ -1472,6 +1509,11 @@
             tituloElem.innerText = `LISTA DE CONTROL [${up(c.Taller)}] - ${up(c.matricula)} (${up(c.modelo)})`;
             document.getElementById('modal-urgente').checked = !!c.urgente;
             document.getElementById('modal-vehiculo-completo').checked = false;
+
+            // Asignar valores de recambios al modal
+            document.getElementById('modal-recambio-pendiente').checked = !!c.recambioPendiente;
+            document.getElementById('modal-fecha-pedido-recambios').value = c.fechaPedidoRecambios || '';
+            document.getElementById('modal-fecha-recepcion-recambios').value = c.fechaRecepcionRecambios || '';
 
             const secAdmin = document.getElementById('modal-seccion-admin');
             if (esAdminVista) {
@@ -1503,7 +1545,6 @@
 
             document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdminEscritura);
             
-            document.getElementById('btn-guardار-modal')?.style; // safe check
             document.getElementById('btn-guardar-modal').style.display = puedeComentar ? 'inline-block' : 'none';
             document.getElementById('seccion-adjuntar-archivos').style.display = esAdminEscritura ? 'block' : 'none';
 
@@ -1667,31 +1708,35 @@
             const puedeComentar = soyAdmin() || (esTaller() && c.Taller === rolUsuario);
             if (!puedeComentar) return;
 
+            // Datos comunes modificables por Admin y Taller
+            const datosComunes = {
+                textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
+                recambioPendiente: document.getElementById('modal-recambio-pendiente').checked,
+                fechaPedidoRecambios: document.getElementById('modal-fecha-pedido-recambios').value,
+                fechaRecepcionRecambios: document.getElementById('modal-fecha-recepcion-recambios').value,
+                fechaUltimaModificacion: Date.now()
+            };
+
             if (!soyAdmin()) {
-                const datosTaller = {
-                    textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
-                    fechaUltimaModificacion: Date.now()
-                };
-                Object.assign(c, datosTaller);
-                guardarDb(cocheIdActual, datosTaller);
+                Object.assign(c, datosComunes);
+                guardarDb(cocheIdActual, datosComunes);
                 dibujar();
                 cerrarModal();
                 return;
             }
 
             const datosActualizar = {
-                textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
+                ...datosComunes,
                 fotos: [...fotosTemporales],
-                fechaUltimaModificacion: Date.now()
+                urgente: document.getElementById('modal-urgente').checked,
+                esCompania: document.getElementById('modal-chk-compania').checked,
+                esCliente: document.getElementById('modal-chk-cliente').checked
             };
 
             const seleccionadas = [];
             document.querySelectorAll('.chk-pieza:checked').forEach(chk => seleccionadas.push(chk.value));
             datosActualizar.piezas = seleccionadas;
-            datosActualizar.urgente = document.getElementById('modal-urgente').checked;
 
-            datosActualizar.esCompania = document.getElementById('modal-chk-compania').checked;
-            datosActualizar.esCliente = document.getElementById('modal-chk-cliente').checked;
             ['comp', 'cli'].forEach(p => ['Venta', 'Coste', 'Recambios'].forEach(k => {
                 datosActualizar[p + k] = parseFloat(document.getElementById(`modal-${p}-${k.toLowerCase()}`).value) || 0;
             }));
@@ -1768,7 +1813,12 @@
                 compVenta: 0, compCoste: 0, compRecambios: 0,
                 cliVenta: 0, cliCoste: 0, cliRecambios: 0,
                 urgente: false,
+                recambioPendiente: false,
+                fechaPedidoRecambios: '',
+                fechaRecepcionRecambios: '',
                 fechaEntrega: fechaInput.value || '',
+                avisoModificacionFecha: false,
+                modificadoPor: '',
                 fechaEntradaTaller: null,
                 fechaEntregaTaller: null,
                 fechaArchivado: null,
