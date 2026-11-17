@@ -797,17 +797,38 @@
         }
 
         function estadoFechaEntrega(fechaStr) {
-            if (!fechaStr) return '';
-            const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fechaStr).trim());
-            if (!m) return '';
-            const entrega = new Date(+m[1], +m[2] - 1, +m[3]);
-            const hoy = new Date();
-            hoy.setHours(0, 0, 0, 0);
-            const diffDias = Math.round((entrega.getTime() - hoy.getTime()) / MS_DIA);
-            if (diffDias === 0) return 'hoy';
-            if (diffDias === 1) return 'manana';
+    if (!fechaStr) return '';
+    let anio, mes, dia;
+
+    // Detectar si viene en formato AAAA-MM-DD (del input type="date")
+    const matchIso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(fechaStr).trim());
+    if (matchIso) {
+        anio = +matchIso[1];
+        mes = +matchIso[2] - 1;
+        dia = +matchIso[3];
+    } else {
+        // Detectar si viene en formato DD/MM/AAAA (o DD/MM/AA)
+        const matchBarra = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(String(fechaStr).trim());
+        if (matchBarra) {
+            dia = +matchBarra[1];
+            mes = +matchBarra[2] - 1;
+            anio = +matchBarra[3];
+            if (anio < 100) anio += 2000;
+        } else {
             return '';
         }
+    }
+
+    const entrega = new Date(anio, mes, dia);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    entrega.setHours(0, 0, 0, 0);
+
+    const diffDias = Math.round((entrega.getTime() - hoy.getTime()) / MS_DIA);
+    if (diffDias === 0) return 'hoy';
+    if (diffDias === 1) return 'manana';
+    return '';
+}
 
         function normalizarCocheEsquema(c) {
             if (c.esquemaV2) return c;
