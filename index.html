@@ -737,7 +737,7 @@
                 <label style="font-size: 10px; font-weight: 600; color: #cbd5e1; display: block; margin-bottom: 4px;">📷 📁 ADJUNTAR FOTOS Y DOCUMENTOS (JPG, PNG, PDF, DOCX):</label>
                 <div id="drop-zone" class="drop-zone" ondragover="permitirSoltar(event)" ondragleave="salirZona(event)" ondrop="soltarArchivos(event)">
                     <p style="font-size: 11px; color: #94a3b8; margin-bottom: 4px;">📁 ARRASTRA ARCHIVOS O FOTOS AQUÍ O</p>
-                    <input type="file" id="input-fotos" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;" class="solo-admin">
+                    <input type="file" id="input-fotos" accept="image/jpeg,image/png,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" multiple onchange="manejarSubidaArchivos(event)" style="font-size: 10px;">
                     <div id="galeria-preview" class="galeria-adjuntos"></div>
                 </div>
             </div>
@@ -1152,7 +1152,6 @@
             dibujar();
         }
 
-        // Función para descartar el aviso haciendo clic directamente en él
         function descartarAviso(idDoc, event) {
             event.stopPropagation();
             const c = coches.find(x => x.idDoc === idDoc);
@@ -1264,7 +1263,6 @@
                         badgeMaterial = `<span class="badge-urgente" style="background:#16a34a; color:#ffffff; border-color:#4ade80;" title="Material Recibido: ${esc(c.fechaRecepcionRecambios)}">📦 ✔️ MATERIAL RECIBIDO</span>`;
                     }
 
-                    // AVISO ROJO, LATENTE Y CENTRADO (Sin texto redundante)
                     let badgeAviso = '';
                     if (c.avisoModificacionFecha) {
                         const autorTexto = c.modificadoPor === 'taller' ? 'TALLER' : 'ADMINISTRACIÓN';
@@ -1582,7 +1580,6 @@
             document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdminEscritura);
             
             document.getElementById('btn-guardar-modal').style.display = puedeComentar ? 'inline-block' : 'none';
-            document.getElementById('seccion-adjuntar-archivos').style.display = esAdminEscritura ? 'block' : 'none';
 
             document.getElementById('modal-checklist').style.display = 'flex';
         }
@@ -1598,24 +1595,20 @@
         }
 
         function permitirSoltar(e) { 
-            if (!soyAdmin()) return;
             e.preventDefault(); 
             document.getElementById('drop-zone').classList.add('dragover'); 
         }
         function salirZona(e) { 
-            if (!soyAdmin()) return;
             e.preventDefault(); 
             document.getElementById('drop-zone').classList.remove('dragover'); 
         }
         function soltarArchivos(e) {
-            if (!soyAdmin()) return;
             e.preventDefault();
             document.getElementById('drop-zone').classList.remove('dragover');
             procesarArchivosFotos(e.dataTransfer.files);
         }
 
         function manejarSubidaArchivos(e) {
-            if (!soyAdmin()) return;
             procesarArchivosFotos(e.target.files);
             e.target.value = '';
         }
@@ -1648,7 +1641,7 @@
         }
 
         async function procesarArchivosFotos(archivos) {
-            if (!archivos || !soyAdmin()) return;
+            if (!archivos) return;
             
             const tiposMimePermitidos = [
                 'image/jpeg', 'image/png', 'image/webp',
@@ -1683,14 +1676,13 @@
         function actualizarGaleriaPreview() {
             const cont = document.getElementById('galeria-preview');
             cont.innerHTML = '';
-            const esAdminEscritura = soyAdmin();
 
             fotosTemporales.forEach((adj, index) => {
                 const esImg = adj.tipo === 'imagen';
                 const srcData = adj.data;
                 const nombre = esc(adj.nombre || `Adjunto ${index+1}`);
-                const btnBorrar = esAdminEscritura ? `<button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
-                const btnBorrarDoc = esAdminEscritura ? `<button class="btn-del" onclick="eliminarFotoTemporal(${index})">✕</button>` : '';
+                const btnBorrar = `<button class="btn-eliminar-foto" onclick="eliminarFotoTemporal(${index})">✕</button>`;
+                const btnBorrarDoc = `<button class="btn-del" onclick="eliminarFotoTemporal(${index})">✕</button>`;
 
                 if (esImg) {
                     cont.innerHTML += `
@@ -1725,7 +1717,6 @@
         }
 
         function eliminarFotoTemporal(index) {
-            if (!soyAdmin()) return;
             fotosTemporales.splice(index, 1);
             actualizarGaleriaPreview();
         }
@@ -1749,8 +1740,15 @@
                 recambioPendiente: document.getElementById('modal-recambio-pendiente').checked,
                 fechaPedidoRecambios: document.getElementById('modal-fecha-pedido-recambios').value,
                 fechaRecepcionRecambios: document.getElementById('modal-fecha-recepcion-recambios').value,
+                fotos: [...fotosTemporales],
                 fechaUltimaModificacion: Date.now()
             };
+
+            const peso = JSON.stringify(datosComunes.fotos).length;
+            if (peso > LIMITE_ADJUNTOS_BYTES) {
+                alert(`Los adjuntos pesan demasiado (${Math.round(peso / 1024)} KB, máximo ${Math.round(LIMITE_ADJUNTOS_BYTES / 1024)} KB).`);
+                return;
+            }
 
             if (!soyAdmin()) {
                 Object.assign(c, datosComunes);
@@ -1762,7 +1760,6 @@
 
             const datosActualizar = {
                 ...datosComunes,
-                fotos: [...fotosTemporales],
                 urgente: document.getElementById('modal-urgente').checked,
                 esCompania: document.getElementById('modal-chk-compania').checked,
                 esCliente: document.getElementById('modal-chk-cliente').checked
@@ -1775,12 +1772,6 @@
             ['comp', 'cli'].forEach(p => ['Venta', 'Coste', 'Recambios'].forEach(k => {
                 datosActualizar[p + k] = parseFloat(document.getElementById(`modal-${p}-${k.toLowerCase()}`).value) || 0;
             }));
-
-            const peso = JSON.stringify(datosActualizar.fotos).length;
-            if (peso > LIMITE_ADJUNTOS_BYTES) {
-                alert(`Los adjuntos pesan demasiado (${Math.round(peso / 1024)} KB, máximo ${Math.round(LIMITE_ADJUNTOS_BYTES / 1024)} KB).`);
-                return;
-            }
 
             Object.assign(c, datosActualizar);
             guardarDb(cocheIdActual, datosActualizar);
