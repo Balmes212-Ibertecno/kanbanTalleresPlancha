@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Política de Seguridad de Contenido (CSP) actualizada para permitir Firebase Auth y Firestore -->
-    
     <title>Control Taller - APV Cars & Auto Bros </title>
     <link rel="icon" type="image/png" href="icon.png">
 
@@ -226,12 +224,12 @@
             z-index: 100;
         }
 
-        .col-titulo-1 { background-color: #6d28d9; } /* Vehículo Retirado */
-        .col-titulo-2 { background-color: #d97706; } /* Pendiente Presupuesto */
-        .col-titulo-3 { background-color: #0284c7; } /* Pendiente de Recogida */
-        .col-titulo-4 { background-color: #881337; } /* En Taller Reparador */
-        .col-titulo-5 { background-color: #15803d; } /* Acabado / Pdte Facturar */
-        .col-titulo-6 { background-color: #525966; } /* Archivado */
+        .col-titulo-1 { background-color: #6d28d9; }
+        .col-titulo-2 { background-color: #d97706; }
+        .col-titulo-3 { background-color: #0284c7; }
+        .col-titulo-4 { background-color: #881337; }
+        .col-titulo-5 { background-color: #15803d; }
+        .col-titulo-6 { background-color: #525966; }
         
         .tarjeta { 
             background-color: #3d454f !important; 
@@ -271,7 +269,6 @@
             box-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
         }
 
-        /* Alertas visuales de Fecha de Entrega */
         .tarjeta.entrega-manana {
             background-color: #423815 !important;
             border-top: 1px solid #eab308 !important;
@@ -419,7 +416,6 @@
         @media (max-width: 760px) { .grid-checklist { grid-template-columns: 1fr; } }
     </style>
 
-    <!-- Firebase SDK (v8) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -427,7 +423,6 @@
 </head>
 <body>
 
-    <!-- MODAL DE AUTENTICACIÓN CON FIREBASE AUTH -->
     <div id="login-modal" class="login-overlay">
         <div class="login-card">
             <h2>🔐 Acceso Seguro al Taller</h2>
@@ -475,7 +470,6 @@
                 </div>
             </header>
 
-            <!-- PANEL DE ESTADÍSTICAS FINANCIERAS -->
             <div id="admin-stats-container" class="admin-stats-panel">
                 <div class="stats-header">
                     <h2>📊 Panel de Estadísticas Financieras (Solo Archivados)</h2>
@@ -567,7 +561,6 @@
                 </div>
             </div>
 
-            <!-- FORMULARIO DE INGRESO -->
             <div id="p-form-container" class="p-form" style="justify-content: center;">
                 <select id="f-taller" onchange="actualizarColorSelectTaller()">
                     <option value="APV Cars" style="background-color: #00d2ff !important; color: #002233 !important; font-weight: 700;">APV CARS</option>
@@ -586,7 +579,6 @@
             </div>
         </div>
 
-        <!-- TABLERO KANBAN (6 COLUMNAS) -->
         <div class="tablero-grid">
             <div id="col-1" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 1)"></div>
             <div id="col-2" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 2)"></div>
@@ -597,7 +589,6 @@
         </div>
     </div>
 
-    <!-- MODAL DETALLES & CHECKLIST -->
     <div id="modal-checklist" class="modal-overlay">
         <div class="modal-content">
             <h3 id="modal-titulo" style="font-size: 14px; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase;">LISTA DE CONTROL - VEHÍCULO</h3>
@@ -616,7 +607,6 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN FINANCIERA EN MODAL -->
             <div id="modal-seccion-admin" style="background: #181d22; border: 1px solid #0284c7; border-radius: 6px; padding: 12px; margin-bottom: 12px; display: none;">
                 <h4 style="font-size: 11px; color: #38bdf8; text-transform: uppercase; margin-bottom: 8px;">💰 Gestión Económica por Pagador (Solo Admin)</h4>
                 
@@ -1056,6 +1046,12 @@
                 snapshot.forEach((doc) => {
                     coches.push(normalizarCocheEsquema({ idDoc: doc.id, ...doc.data() }));
                 });
+
+                // FILTRO ESTRICTO PARA TALLERES: Solo ven su taller y estrictamente entre columnas 2 y 4
+                if (esTaller()) {
+                    coches = coches.filter(c => c.Taller === rolUsuario && c.columna >= 2 && c.columna <= 4);
+                }
+
                 dibujar();
             }, (err) => {
                 console.error("Error de lectura en Firestore:", err);
@@ -1083,7 +1079,7 @@
         }
 
         function cambiarFechaEntrega(idDoc, event, inputElem) {
-            event.stopPropagation(); // Evita que se propague y abra el modal de la tarjeta
+            event.stopPropagation();
             const c = coches.find(x => x.idDoc === idDoc);
             if (!c) return;
             const autorizado = soyAdmin() || (esTaller() && c.Taller === rolUsuario);
@@ -1160,7 +1156,6 @@
                     ocultos = coincidentes.length - filtrados.length;
                 }
 
-                // Ordenar por fecha de entrega estimada de más reciente/cercana a más tardía en la columna de taller (Columna 4)
                 if (cNum === COL_EN_TALLER) {
                     filtrados = [...filtrados].sort((a, b) => {
                         const msA = aMs(a.fechaEntrega);
@@ -1200,7 +1195,6 @@
 
                     let infoEconomica = '';
                     if (esAdminVista) {
-                        // Suma combinada de Aseguradora + Cliente (Venta, Recambios, Coste)
                         const vTotal = (Number(c.compVenta) || 0) + (Number(c.cliVenta) || 0);
                         const cTotal = (Number(c.compCoste) || 0) + (Number(c.cliCoste) || 0);
                         const rTotal = (Number(c.compRecambios) || 0) + (Number(c.cliRecambios) || 0);
@@ -1488,6 +1482,7 @@
 
             document.querySelectorAll('.solo-admin').forEach(el => el.disabled = !esAdminEscritura);
             
+            document.getElementById('btn-guardار-modal')?.style; // safe check
             document.getElementById('btn-guardar-modal').style.display = puedeComentar ? 'inline-block' : 'none';
             document.getElementById('seccion-adjuntar-archivos').style.display = esAdminEscritura ? 'block' : 'none';
 
@@ -1568,7 +1563,7 @@
             for (const archivo of lista) {
                 try {
                     if (!tiposMimePermitidos.includes(archivo.type)) {
-                        alert(`El archivo "${esc(archivo.name)}" no tiene un formato permitido (solamente imágenes, PDF, DOCX o TXT).`);
+                        alert(`El archivo "${esc(archivo.name)}" no tiene un formato permitido.`);
                         continue;
                     }
 
@@ -1682,7 +1677,7 @@
 
             const peso = JSON.stringify(datosActualizar.fotos).length;
             if (peso > LIMITE_ADJUNTOS_BYTES) {
-                alert(`Los adjuntos pesan demasiado (${Math.round(peso / 1024)} KB, máximo ${Math.round(LIMITE_ADJUNTOS_BYTES / 1024)} KB). Elimina alguno.`);
+                alert(`Los adjuntos pesan demasiado (${Math.round(peso / 1024)} KB, máximo ${Math.round(LIMITE_ADJUNTOS_BYTES / 1024)} KB).`);
                 return;
             }
 
@@ -1724,7 +1719,7 @@
             if (!soyAdmin()) return;
             if(confirm("¿ELIMINAR ESTE VEHÍCULO DEFINITIVAMENTE?")) {
                 coches = coches.filter(x => x.idDoc !== idDoc);
-                if (db) db.collection("vehiculos").doc(idDoc).delete().catch(err => { console.error(err); alert("No se pudo eliminar el vehículo. Permisos insuficientes."); });
+                if (db) db.collection("vehiculos").doc(idDoc).delete().catch(err => { console.error(err); alert("No se pudo eliminar el vehículo."); });
                 dibujar();
             }
         }
@@ -1765,7 +1760,7 @@
             };
 
             if (!db) { alert("Sin conexión con la base de datos."); return; }
-            db.collection("vehiculos").add(nuevoCoche || nuevoCoche).catch(err => { console.error(err); alert("No se pudo crear el vehículo. Revisa las reglas de seguridad."); });
+            db.collection("vehiculos").add(nuevoCoche).catch(err => { console.error(err); alert("No se pudo crear el vehículo."); });
 
             matInput.value = '';
             modInput.value = '';
