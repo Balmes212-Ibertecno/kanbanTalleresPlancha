@@ -1279,7 +1279,7 @@
                     let badgeAviso = '';
                     if (c.avisoModificacionFecha) {
                         const autorTexto = c.modificadoPor === 'taller' ? 'TALLER' : 'ADMINISTRACIÓN';
-                        badgeAviso = `<span class="badge-aviso-cambio" onclick="descartarAviso('${esc(c.idDoc)}', event)" title="Fecha modificada por ${autorTexto} (Haz clic para quitar)">⚠️ FECHA CAMBIADA (${autorTexto})</span>`;
+                        badgeAviso = `<span class="badge-aviso-cambio" onclick="descartarAviso('${esc(c.idDoc)}', event)" title="Fecha modificada por ${autorTexto} (Haz clic para quitar)">⚠️ FECHA ENTREGA MODIFICADA POR ${autorTexto} </span>`;
                     }
 
                     const badgeComp = c.esCompania ? `<span class="badge-pagador badge-compania">🏢 CIA. ASEGURADORA</span>` : '';
