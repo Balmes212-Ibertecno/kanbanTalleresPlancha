@@ -294,17 +294,31 @@
         }
         .badge-urgente { background-color: #b91c1c; color: #ffffff; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 9px; border: 1px solid #ef4444; display: inline-block; }
         
-        /* AVISO DE CAMBIO DE FECHA DISCRETO Y ELEGANTE (NARANJA/ÁMBAR ESTÁTICO) */
+        /* AVISO DE CAMBIO DE FECHA: ROJO, LATENTE Y CENTRADO */
         .badge-aviso-cambio { 
-            background-color: #d97706; 
+            background-color: #dc2626; 
             color: #ffffff; 
-            padding: 2px 6px; 
-            border-radius: 3px; 
-            font-weight: 700; 
-            font-size: 9px; 
-            border: 1px solid #fef08a; 
-            display: inline-block; 
-            letter-spacing: 0.3px;
+            padding: 4px 10px; 
+            border-radius: 4px; 
+            font-weight: 800; 
+            font-size: 10px; 
+            border: 1px solid #fca5a5; 
+            display: block; 
+            text-align: center;
+            margin: 6px 0;
+            cursor: pointer;
+            animation: avisoLatente 1.2s infinite ease-in-out;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+            letter-spacing: 0.5px;
+        }
+        .badge-aviso-cambio:hover {
+            background-color: #b91c1c;
+            transform: scale(1.02);
+        }
+        @keyframes avisoLatente {
+            0% { opacity: 1; }
+            50% { opacity: 0.55; }
+            100% { opacity: 1; }
         }
 
         .badge-pagador { padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 9px; display: inline-block; }
@@ -1123,7 +1137,6 @@
             const nuevaFecha = inputElem.value;
             if (c.fechaEntrega === nuevaFecha) return;
 
-            // El aviso se activa para ambos (tanto si modifica el taller como si lo hace el admin)
             const esModTaller = esTaller();
             const datosUpdate = {
                 fechaEntrega: nuevaFecha,
@@ -1136,6 +1149,17 @@
             c.modificadoPor = datosUpdate.modificadoPor;
 
             guardarDb(idDoc, datosUpdate);
+            dibujar();
+        }
+
+        // Función para descartar el aviso haciendo clic directamente en él
+        function descartarAviso(idDoc, event) {
+            event.stopPropagation();
+            const c = coches.find(x => x.idDoc === idDoc);
+            if (!c) return;
+
+            c.avisoModificacionFecha = false;
+            guardarDb(idDoc, { avisoModificacionFecha: false });
             dibujar();
         }
 
@@ -1240,11 +1264,11 @@
                         badgeMaterial = `<span class="badge-urgente" style="background:#16a34a; color:#ffffff; border-color:#4ade80;" title="Material Recibido: ${esc(c.fechaRecepcionRecambios)}">📦 ✔️ MATERIAL RECIBIDO</span>`;
                     }
 
-                    // AVISO ESTÁTICO DE CAMBIO DE FECHA (Se muestra si lo cambió taller o admin)
+                    // AVISO ROJO, LATENTE Y CENTRADO (Sin texto redundante)
                     let badgeAviso = '';
                     if (c.avisoModificacionFecha) {
                         const autorTexto = c.modificadoPor === 'taller' ? 'TALLER' : 'ADMINISTRACIÓN';
-                        badgeAviso = `<span class="badge-aviso-cambio" title="Fecha modificada por ${autorTexto}">⚠️ FECHA CAMBIADA (${autorTexto})</span>`;
+                        badgeAviso = `<span class="badge-aviso-cambio" onclick="descartarAviso('${esc(c.idDoc)}', event)" title="Fecha modificada por ${autorTexto} (Haz clic para quitar)">⚠️ FECHA CAMBIADA (${autorTexto})</span>`;
                     }
 
                     const badgeComp = c.esCompania ? `<span class="badge-pagador badge-compania">🏢 CIA. ASEGURADORA</span>` : '';
@@ -1303,8 +1327,9 @@
                                 </div>
                             </div>
                             <div style="display:flex; gap:4px; margin-top:2px; flex-wrap:wrap;">
-                                ${urg} ${recPend} ${badgeMaterial} ${badgeAviso} ${badgeComp} ${badgeCli}
+                                ${urg} ${recPend} ${badgeMaterial} ${badgeComp} ${badgeCli}
                             </div>
+                            ${badgeAviso}
                             ${infoEconomica}
 
                             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;" onclick="event.stopPropagation()">
@@ -1496,7 +1521,6 @@
             const c = coches.find(x => x.idDoc === idDoc);
             if(!c) return;
 
-            // Al abrir la tarjeta y examinarla, se limpia el aviso de cambio de fecha
             if (c.avisoModificacionFecha) {
                 c.avisoModificacionFecha = false;
                 guardarDb(idDoc, { avisoModificacionFecha: false });
