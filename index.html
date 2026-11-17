@@ -293,8 +293,19 @@
             box-shadow: 0 0 0 2px #3d454f, 0 2px 6px rgba(0,0,0,0.5);
         }
         .badge-urgente { background-color: #b91c1c; color: #ffffff; padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 9px; border: 1px solid #ef4444; display: inline-block; }
-        .badge-aviso-cambio { background-color: #f59e0b; color: #18181b; padding: 2px 6px; border-radius: 3px; font-weight: 800; font-size: 9px; border: 1px solid #fef08a; display: inline-block; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        
+        /* AVISO DE CAMBIO DE FECHA DISCRETO Y ELEGANTE (NARANJA/ÁMBAR ESTÁTICO) */
+        .badge-aviso-cambio { 
+            background-color: #d97706; 
+            color: #ffffff; 
+            padding: 2px 6px; 
+            border-radius: 3px; 
+            font-weight: 700; 
+            font-size: 9px; 
+            border: 1px solid #fef08a; 
+            display: inline-block; 
+            letter-spacing: 0.3px;
+        }
 
         .badge-pagador { padding: 2px 6px; border-radius: 3px; font-weight: 700; font-size: 9px; display: inline-block; }
         .badge-compania { background-color: #2563eb; color: #ffffff; border: 1px solid #60a5fa; }
@@ -610,7 +621,7 @@
                 </div>
             </div>
 
-            <!-- BLOQUE RECAMBIOS Y FECHAS (Editable por Admin y Taller) -->
+            <!-- BLOQUE RECAMBIOS Y FECHAS (Modificable por Admin y Taller) -->
             <div style="background: #1e242b; border: 1px solid #eab308; border-radius: 6px; padding: 12px; margin-bottom: 12px;">
                 <h4 style="font-size: 11px; color: #facc15; text-transform: uppercase; margin-bottom: 8px;">🔩 GESTIÓN DE RECAMBIOS Y PEDIDOS</h4>
                 <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
@@ -1112,12 +1123,12 @@
             const nuevaFecha = inputElem.value;
             if (c.fechaEntrega === nuevaFecha) return;
 
-            // Lógica de aviso de cambio cruzado
-            const actualizadoPorTaller = esTaller();
+            // El aviso se activa para ambos (tanto si modifica el taller como si lo hace el admin)
+            const esModTaller = esTaller();
             const datosUpdate = {
                 fechaEntrega: nuevaFecha,
                 avisoModificacionFecha: true,
-                modificadoPor: actualizadoPorTaller ? 'taller' : 'admin'
+                modificadoPor: esModTaller ? 'taller' : 'admin'
             };
 
             c.fechaEntrega = nuevaFecha;
@@ -1220,16 +1231,20 @@
                     const puedeEditarFecha = esAdminEscritura || (esTaller() && c.Taller === rolUsuario);
 
                     const urg = c.urgente ? `<span class="badge-urgente">🚨 URGENTE</span>` : '';
-                    const recPend = c.recambioPendiente ? `<span class="badge-urgente" style="background:#eab308; color:#18181b; border-color:#fef08a;">🔩 RECAMBIO PENDIENTE</span>` : '';
+                    const recPend = c.recambioPendiente ? `<span class="badge-urgente" style="background:#b91c1c; color:#ffffff; border-color:#ef4444;">⚠️ RECAMBIO PENDIENTE</span>` : '';
 
-                    // Lógica para mostrar el aviso de actualización según el rol visualizado
+                    let badgeMaterial = '';
+                    if (c.fechaPedidoRecambios && !c.fechaRecepcionRecambios) {
+                        badgeMaterial = `<span class="badge-urgente" style="background:#0284c7; color:#ffffff; border-color:#38bdf8;" title="Material Pedido: ${esc(c.fechaPedidoRecambios)}">📦 ✔️ MATERIAL PEDIDO</span>`;
+                    } else if (c.fechaRecepcionRecambios) {
+                        badgeMaterial = `<span class="badge-urgente" style="background:#16a34a; color:#ffffff; border-color:#4ade80;" title="Material Recibido: ${esc(c.fechaRecepcionRecambios)}">📦 ✔️ MATERIAL RECIBIDO</span>`;
+                    }
+
+                    // AVISO ESTÁTICO DE CAMBIO DE FECHA (Se muestra si lo cambió taller o admin)
                     let badgeAviso = '';
                     if (c.avisoModificacionFecha) {
-                        if (esAdminVista && c.modificadoPor === 'taller') {
-                            badgeAviso = `<span class="badge-aviso-cambio" title="El taller cambió la fecha de entrega">⚠️ FECHA CAMBIADA POR TALLER</span>`;
-                        } else if (esTaller() && c.modificadoPor === 'admin') {
-                            badgeAviso = `<span class="badge-aviso-cambio" title="El Admin cambió la fecha de entrega">⚠️ FECHA CAMBIADA POR ADMIN</span>`;
-                        }
+                        const autorTexto = c.modificadoPor === 'taller' ? 'TALLER' : 'ADMINISTRACIÓN';
+                        badgeAviso = `<span class="badge-aviso-cambio" title="Fecha modificada por ${autorTexto}">⚠️ FECHA CAMBIADA (${autorTexto})</span>`;
                     }
 
                     const badgeComp = c.esCompania ? `<span class="badge-pagador badge-compania">🏢 CIA. ASEGURADORA</span>` : '';
@@ -1288,7 +1303,7 @@
                                 </div>
                             </div>
                             <div style="display:flex; gap:4px; margin-top:2px; flex-wrap:wrap;">
-                                ${urg} ${recPend} ${badgeAviso} ${badgeComp} ${badgeCli}
+                                ${urg} ${recPend} ${badgeMaterial} ${badgeAviso} ${badgeComp} ${badgeCli}
                             </div>
                             ${infoEconomica}
 
@@ -1481,12 +1496,10 @@
             const c = coches.find(x => x.idDoc === idDoc);
             if(!c) return;
 
-            // Al abrir la tarjeta, limpiamos el aviso de cambio correspondiente para que desaparezca la alerta al leerlo
+            // Al abrir la tarjeta y examinarla, se limpia el aviso de cambio de fecha
             if (c.avisoModificacionFecha) {
-                if ((esPerfilAdmin() && c.modificadoPor === 'taller') || (esTaller() && c.modificadoPor === 'admin')) {
-                    c.avisoModificacionFecha = false;
-                    guardarDb(idDoc, { avisoModificacionFecha: false });
-                }
+                c.avisoModificacionFecha = false;
+                guardarDb(idDoc, { avisoModificacionFecha: false });
             }
 
             const esAdminVista = esPerfilAdmin();
@@ -1510,7 +1523,6 @@
             document.getElementById('modal-urgente').checked = !!c.urgente;
             document.getElementById('modal-vehiculo-completo').checked = false;
 
-            // Asignar valores de recambios al modal
             document.getElementById('modal-recambio-pendiente').checked = !!c.recambioPendiente;
             document.getElementById('modal-fecha-pedido-recambios').value = c.fechaPedidoRecambios || '';
             document.getElementById('modal-fecha-recepcion-recambios').value = c.fechaRecepcionRecambios || '';
@@ -1708,7 +1720,6 @@
             const puedeComentar = soyAdmin() || (esTaller() && c.Taller === rolUsuario);
             if (!puedeComentar) return;
 
-            // Datos comunes modificables por Admin y Taller
             const datosComunes = {
                 textoLibre: document.getElementById('modal-texto-libre').value.trim().toUpperCase(),
                 recambioPendiente: document.getElementById('modal-recambio-pendiente').checked,
@@ -1820,7 +1831,7 @@
                 avisoModificacionFecha: false,
                 modificadoPor: '',
                 fechaEntradaTaller: null,
-                fechaEntregaTaller: null,
+                fechaEntregaTellar: null,
                 fechaArchivado: null,
                 historial: [],
                 columna: COL_PRESUPUESTO,
