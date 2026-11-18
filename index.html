@@ -2133,7 +2133,7 @@
             const JSZip = cfg.JSZip;
             const ESTADOS = cfg.estados, MESES = cfg.meses, MARGEN = cfg.margen;
             const MES_ABR = MESES.map(m => m.slice(0, 3));
-            const x = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            const x = s => String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             const colName = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
             const ref = (r, c) => colName(c) + (r + 1);
             const serMs = ms => { const d = new Date(ms); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5 + 25569; };
@@ -2214,7 +2214,7 @@
                     const dim = rows.length ? `<dimension ref="A1:${ref(rows[rows.length - 1], maxC)}"/>` : '';
                     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
                         '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
-                        `<sheetPr>${this.tab ? `<tabColor rgb="FF${this.tab}"/>` : ''}<pageSetUpPr fitToPage="1"/></sheetPr>${dim}<sheetViews>${this.view}</sheetViews><sheetFormatPr defaultRowHeight="15"/>` +
+                        `<sheetPr>${this.tab ? `<tabColor rgb="FF${this.tab}"/>` : ''}<pageSetUpPr fitToPage="1"/></sheetPr>${dim}<sheetViews>${this.view || '<sheetView workbookViewId="0"/>'}</sheetViews><sheetFormatPr defaultRowHeight="15"/>` +
                         (this.cols.length ? '<cols>' + this.cols.map((w, i) => w ? `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>` : '').join('') + '</cols>' : '') +
                         `<sheetData>${sd}</sheetData>` + this.filter +
                         (this.merges.length ? `<mergeCells count="${this.merges.length}">${this.merges.map(m => `<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : '') +
@@ -2232,6 +2232,7 @@
                     if (c.v === undefined || c.v === null) return `<c r="${rf}"${s}>${f}</c>`;
                     if (typeof c.v === 'object') return `<c r="${rf}"${s} t="e">${f}<v>${c.v.err}</v></c>`;
                     if (typeof c.v === 'string') return `<c r="${rf}"${s} t="str">${f}<v>${x(c.v)}</v></c>`;
+                    if (typeof c.v === 'number' && !isFinite(c.v)) return `<c r="${rf}"${s}>${f}</c>`;
                     return `<c r="${rf}"${s}>${f}<v>${c.v}</v></c>`;
                 }
                 if (c.v === undefined || c.v === null || c.v === '') return `<c r="${rf}"${s}/>`;
@@ -2429,7 +2430,7 @@
             H.cols = [2, ...Array(24).fill(6.9), 2];
             const bandT = (r, text, s) => { H.set(r, 1, { v: text, s }); H.merge(r, 1, r, 24, s); };
             bandT(1, '📈  Dashboard de estadísticas · Control de Taller', S.title); H.rowH[1] = 36;
-            bandT(2, `Generado el ${cfg.generado} · Cambia los filtros de las celdas amarillas y todo (indicadores, gráficos y tablas) se recalcula`, S.sub); H.rowH[2] = 18;
+            bandT(2, `Generado el ${cfg.generado} (motor v4) · Cambia los filtros de las celdas amarillas y todo (indicadores, gráficos y tablas) se recalcula`, S.sub); H.rowH[2] = 18;
             bandT(4, 'FILTROS', S.sect); H.rowH[4] = 20;
             const filt = [
                 ['Estado', 'Estado', FX.estado, S.fin], ['Año', 'Anio', FX.anio, S.finNum], ['Mes', 'Mes', FX.mes, S.fin], ['Taller', 'Taller', FX.taller, S.fin],
@@ -2519,7 +2520,7 @@
             const NS_C = 'xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
             const txPr = (sz, col, b) => `<c:txPr><a:bodyPr/><a:lstStyle/><a:p><a:pPr><a:defRPr sz="${sz}" b="${b ? 1 : 0}"><a:solidFill><a:srgbClr val="${col}"/></a:solidFill></a:defRPr></a:pPr><a:endParaRPr lang="es-ES"/></a:p></c:txPr>`;
             const strCache = arr => `<c:strCache><c:ptCount val="${arr.length}"/>${arr.map((v, i) => `<c:pt idx="${i}"><c:v>${x(v)}</c:v></c:pt>`).join('')}</c:strCache>`;
-            const numCache = (arr, fmt) => `<c:numCache><c:formatCode>${x(fmt)}</c:formatCode><c:ptCount val="${arr.length}"/>${arr.map((v, i) => (v === null || v === undefined) ? '' : `<c:pt idx="${i}"><c:v>${v}</c:v></c:pt>`).join('')}</c:numCache>`;
+            const numCache = (arr, fmt) => `<c:numCache><c:formatCode>${x(fmt)}</c:formatCode><c:ptCount val="${arr.length}"/>${arr.map((v, i) => (typeof v !== 'number' || !isFinite(v)) ? '' : `<c:pt idx="${i}"><c:v>${v}</c:v></c:pt>`).join('')}</c:numCache>`;
             const solid = c => `<a:solidFill><a:srgbClr val="${c}"/></a:solidFill>`;
             function chartXml(ch) {
                 const isLine = ch.type === 'line', isBar = ch.type === 'bar', isDon = ch.type === 'doughnut';
@@ -2551,7 +2552,7 @@
                 const col = i % 2, band = Math.floor(i / 2), r0 = 19 + band * 18;
                 const c0 = col ? 13 : 1, c1 = col ? 24 : 12;
                 return `<xdr:twoCellAnchor><xdr:from><xdr:col>${c0}</xdr:col><xdr:colOff>30000</xdr:colOff><xdr:row>${r0}</xdr:row><xdr:rowOff>30000</xdr:rowOff></xdr:from><xdr:to><xdr:col>${c1}</xdr:col><xdr:colOff>470000</xdr:colOff><xdr:row>${r0 + 16}</xdr:row><xdr:rowOff>170000</xdr:rowOff></xdr:to>` +
-                    `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${i + 2}" name="Gráfico ${i + 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><xdr:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rId${i + 1}"/></a:graphicData></xdr:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>`;
+                    `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${i + 2}" name="Gráfico ${i + 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rId${i + 1}"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>`;
             };
             const drawingXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' + charts.map((_, i) => anchor(i)).join('') + '</xdr:wsDr>';
         
@@ -2574,23 +2575,24 @@
                 defNames.map(([n, v]) => `<definedName name="${n}">${v}</definedName>`).join('') + '</definedNames><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>';
             const REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
             const relsXml = list => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + list.map(([id, t, tg]) => `<Relationship Id="${id}" Type="${REL}/${t}" Target="${tg}"/>`).join('') + '</Relationships>';
-            const ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+            const ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
                 '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
                 sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') +
-                '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.drawing+xml"/>' +
+                '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' +
                 charts.map((_, i) => `<Override PartName="/xl/charts/chart${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`).join('') + '</Types>';
         
             const zip = new JSZip();
-            zip.file('[Content_Types].xml', ct);
-            zip.file('_rels/.rels', relsXml([['rId1', 'officeDocument', 'xl/workbook.xml']]));
-            zip.file('xl/workbook.xml', workbookXml);
-            zip.file('xl/_rels/workbook.xml.rels', relsXml([...sheets.map((_, i) => [`rId${i + 1}`, 'worksheet', `worksheets/sheet${i + 1}.xml`]), [`rId${sheets.length + 1}`, 'styles', 'styles.xml']]));
-            zip.file('xl/styles.xml', stylesXml);
-            sheets.forEach(([, h], i) => zip.file(`xl/worksheets/sheet${i + 1}.xml`, h.xml()));
-            zip.file('xl/worksheets/_rels/sheet1.xml.rels', relsXml([['rId1', 'drawing', '../drawings/drawing1.xml']]));
-            zip.file('xl/drawings/drawing1.xml', drawingXml);
-            zip.file('xl/drawings/_rels/drawing1.xml.rels', relsXml(charts.map((_, i) => [`rId${i + 1}`, 'chart', `../charts/chart${i + 1}.xml`])));
-            charts.forEach((ch, i) => zip.file(`xl/charts/chart${i + 1}.xml`, chartXml(ch)));
+            const put = (n, d) => zip.file(n, d, { createFolders: false });
+            put('[Content_Types].xml', ct);
+            put('_rels/.rels', relsXml([['rId1', 'officeDocument', 'xl/workbook.xml']]));
+            put('xl/workbook.xml', workbookXml);
+            put('xl/_rels/workbook.xml.rels', relsXml([...sheets.map((_, i) => [`rId${i + 1}`, 'worksheet', `worksheets/sheet${i + 1}.xml`]), [`rId${sheets.length + 1}`, 'styles', 'styles.xml']]));
+            put('xl/styles.xml', stylesXml);
+            sheets.forEach(([, h], i) => put(`xl/worksheets/sheet${i + 1}.xml`, h.xml()));
+            put('xl/worksheets/_rels/sheet1.xml.rels', relsXml([['rId1', 'drawing', '../drawings/drawing1.xml']]));
+            put('xl/drawings/drawing1.xml', drawingXml);
+            put('xl/drawings/_rels/drawing1.xml.rels', relsXml(charts.map((_, i) => [`rId${i + 1}`, 'chart', `../charts/chart${i + 1}.xml`])));
+            charts.forEach((ch, i) => put(`xl/charts/chart${i + 1}.xml`, chartXml(ch)));
             return zip;
         }
 
@@ -2608,10 +2610,28 @@
             };
         }
 
+        function cargarScript(url) {
+            return new Promise(res => {
+                const s = document.createElement('script');
+                s.src = url; s.onload = () => res(true); s.onerror = () => { s.remove(); res(false); };
+                document.head.appendChild(s);
+            });
+        }
+
+        async function asegurarJSZip() {
+            if (typeof JSZip !== 'undefined') return true;
+            const urls = ['https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js', 'https://unpkg.com/jszip@3.10.1/dist/jszip.min.js'];
+            for (const u of urls) { if (await cargarScript(u) && typeof JSZip !== 'undefined') return true; }
+            return false;
+        }
+
         async function exportarExcel(lista, f) {
             if (!esPerfilAdmin()) return;
-            if (typeof JSZip === 'undefined') { exportarExcelBasico(lista, f); return; }
             if (!coches.length) { alert('No hay vehículos para exportar.'); return; }
+            if (!(await asegurarJSZip())) {
+                alert('No se pudo cargar la librería JSZip (necesaria para el Excel con dashboard).\n\nPosibles causas: sin conexión, bloqueador de anuncios o red restringida.\n\nSe descargará la versión BÁSICA (sin dashboard ni gráficos). Revisa la conexión y vuelve a pulsar "Exportar" para obtener el dashboard completo.');
+                exportarExcelBasico(lista, f); return;
+            }
             try {
                 const zip = crearXlsxDashboard(coches.map(filaDatos), {
                     JSZip, estados: NOMBRES_COL_CORTOS, meses: MESES, margen: MARGEN_RECAMBIO, filtros: f,
@@ -2625,7 +2645,7 @@
                 setTimeout(() => URL.revokeObjectURL(a.href), 4000);
             } catch (err) {
                 console.error(err);
-                alert('No se pudo generar el Excel con dashboard. Se descargará la versión básica.');
+                alert('No se pudo generar el Excel con dashboard (' + (err && err.message ? err.message : err) + ').\nSe descargará la versión BÁSICA, sin dashboard.');
                 exportarExcelBasico(lista, f);
             }
         }
