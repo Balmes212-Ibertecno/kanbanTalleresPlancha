@@ -2430,7 +2430,7 @@
             H.cols = [2, ...Array(24).fill(6.9), 2];
             const bandT = (r, text, s) => { H.set(r, 1, { v: text, s }); H.merge(r, 1, r, 24, s); };
             bandT(1, '📈  Dashboard de estadísticas · Control de Taller', S.title); H.rowH[1] = 36;
-            bandT(2, `Generado el ${cfg.generado} (motor v4) · Cambia los filtros de las celdas amarillas y todo (indicadores, gráficos y tablas) se recalcula`, S.sub); H.rowH[2] = 18;
+            bandT(2, `Generado el ${cfg.generado} · Cambia los filtros de las celdas amarillas y todo (indicadores, gráficos y tablas) se recalcula`, S.sub); H.rowH[2] = 18;
             bandT(4, 'FILTROS', S.sect); H.rowH[4] = 20;
             const filt = [
                 ['Estado', 'Estado', FX.estado, S.fin], ['Año', 'Anio', FX.anio, S.finNum], ['Mes', 'Mes', FX.mes, S.fin], ['Taller', 'Taller', FX.taller, S.fin],
