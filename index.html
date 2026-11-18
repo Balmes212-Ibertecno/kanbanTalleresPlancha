@@ -463,6 +463,11 @@
         .dash-tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
         @media (max-width: 900px) { .dash-charts { grid-template-columns: 1fr; } }
         @media (max-width: 760px) { .dash-filtros { position: static; } }
+        .dash-grid6 { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+        .dash-grid6 .stat-card { min-width: 0; overflow: hidden; }
+        .dash-grid6 .stat-card .value { font-size: 18px; overflow-wrap: anywhere; }
+        @media (max-width: 1000px) { .dash-grid6 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+        @media (max-width: 560px) { .dash-grid6 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -532,7 +537,19 @@
         </div>
         <p class="dash-nota">Año, mes y fechas usan la fecha en que el vehículo pasa a Archivado; si aún no está archivado, su fecha de ingreso. El Excel exporta exactamente lo que ves con estos filtros.</p>
 
-        <div id="dash-kpis" class="stats-grid"></div>
+        <div class="dash-grid6">
+            <div id="dash-kpis" style="display:contents;"></div>
+            <div class="stat-card" id="dash-card-entradas">
+                <div class="title">🚪 Total entradas de taller</div>
+                <input type="number" min="0" max="9999" step="1" id="dash-entradas" placeholder="0000" style="display:block; width:84px; margin:6px auto; text-align:center; font-size:16px; font-weight:700;">
+                <div class="subtext">Dato manual · se guarda por año / mes / taller</div>
+            </div>
+            <div class="stat-card" id="dash-card-pen">
+                <div class="title">🎯 % penetración</div>
+                <div class="value" id="dash-pen-val" style="color:#38bdf8;">-</div>
+                <div class="subtext" id="dash-pen-sub">Reparados / entradas</div>
+            </div>
+        </div>
 
         <div class="dash-charts">
             <div class="chart-box"><h4>Evolución mensual de importes (€)</h4><div style="height:240px; position:relative;"><canvas id="dash-ch-mes"></canvas></div></div>
@@ -885,6 +902,7 @@
         const NOMBRES_COL_CORTOS = ["VEH. RETIRADO", "PDTE. PRESUP.", "PDTE. RECOGIDA", "EN TALLER", "ACABADO", "ARCHIVADO"];
 
         const esPerfilAdmin = () => rolUsuario === 'ADMIN' || rolUsuario === 'ADMIN_LECTURA';
+        const esAdminTotal = () => rolUsuario === 'ADMIN';
         const soyAdmin = () => rolUsuario === 'ADMIN';
         const esTaller = () => rolUsuario === 'APV Cars' || rolUsuario === 'Auto Bros';
         const puedeEditarBasico = () => soyAdmin() || esTaller();
@@ -2130,6 +2148,7 @@
             if (!filas.length) { alert('No hay vehículos con los filtros actuales.'); return; }
             const r = resumir(filas, lista);
             const r1 = n => Math.round(n * 10) / 10;
+            const ent = Number(dashEntradasDb[dashClave(f)]) || 0;
             const aoa = [
                 ['Estadísticas · Control de Taller'], ['Generado el', formatoDia(Date.now())], [],
                 ['Filtros aplicados'], ...descFiltros(f), [],
@@ -2143,7 +2162,8 @@
                 ['Venta recambios', r.rec, '€'],
                 ['Margen recambio', r.margRec, '€'],
                 ['Vehículos Cia. Aseguradora', r.nComp, ''],
-                ['Vehículos Cliente', r.nCli, '']
+                ['Vehículos Cliente', r.nCli, ''],
+                ...(ent > 0 ? [['Total entradas de taller', ent, ''], ['% penetración (reparados / entradas)', r1(r.n / ent * 100), '%']] : [])
             ];
             const wsR = XLSX.utils.aoa_to_sheet(aoa);
             aoa.forEach((fila, i) => {
@@ -2180,6 +2200,7 @@ function dashExportar() { exportarExcel(dashLista, dashValores()); }
         function abrirDashboard() {
             if (!esPerfilAdmin()) return;
             dashAbierto = true;
+            dashEntradasSuscribir();
             document.getElementById('dash-overlay').classList.add('visible');
             dashActualizar();
         }
@@ -2227,7 +2248,8 @@ function dashExportar() { exportarExcel(dashLista, dashValores()); }
                 kpi('% Margen ZSUB', r.porc.toFixed(1).replace('.', ',') + ' %', '#34d399') +
                 kpi('🔩 Venta recambios', eurFmt(r.rec), '#fbbf24') +
                 kpi('€ Margen recambio', eurFmt(r.margRec), '#f43f5e') +
-                kpi('💳 Pagador', `${r.nComp} CIA. ASEGURADORA<br>${r.nCli} CLIENTE`, '#e2e8f0', '');
+                kpi('🏢 Veh. Cia. aseguradora', r.nComp, '#e2e8f0', 'Vehículos') +
+                kpi('👤 Veh. Cliente', r.nCli, '#e2e8f0', 'Vehículos');
 
             const ejes = { x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }, y: { grace: '12%', ticks: { color: '#94a3b8' }, grid: { color: '#334155' } } };
             const leyenda = { labels: { color: '#cbd5e1', font: { size: 10 } } };
@@ -2276,6 +2298,53 @@ function dashExportar() { exportarExcel(dashLista, dashValores()); }
             });
 
             dashTabla();
+            dashEntradasCargar(f);
+        }
+
+        // Total de entradas (manual, solo ADMIN lo edita; se guarda en Firestore) y % penetración = reparados / entradas
+        let dashEntradasDb = {}, dashEntradasSuscrito = false, dashEntradasTimer = null;
+        const dashClave = f => `${f.anio}|${f.mes}|${f.taller}`;
+
+        function dashEntradasSuscribir() {
+            if (dashEntradasSuscrito || !db) return;
+            dashEntradasSuscrito = true;
+            db.collection('estadisticas').doc('entradas').onSnapshot(snap => {
+                dashEntradasDb = (snap.exists && snap.data().valores) || {};
+                if (dashAbierto) dashEntradasCargar(dashValores());
+            }, err => { console.error(err); dashEntradasSuscrito = false; });
+        }
+
+        function dashEntradasCargar(f) {
+            const admin = esAdminTotal();
+            document.getElementById('dash-card-entradas').style.display = admin ? '' : 'none';
+            const inp = document.getElementById('dash-entradas');
+            if (admin && document.activeElement !== inp) {
+                const v = dashEntradasDb[dashClave(f)];
+                inp.value = (v === undefined || v === null) ? '' : v;
+            }
+            dashPenetracion();
+        }
+
+        function dashPenetracion() {
+            const inp = document.getElementById('dash-entradas');
+            const v = (esAdminTotal() && document.activeElement === inp) ? inp.value : dashEntradasDb[dashClave(dashValores())];
+            const e = Number(v), n = dashFilas.length, ok = v !== undefined && v !== null && v !== '' && e > 0;
+            document.getElementById('dash-pen-val').innerText = ok ? (n / e * 100).toFixed(1).replace('.', ',') + ' %' : '-';
+            document.getElementById('dash-pen-sub').innerText = `${n} reparados / ${ok ? e : '?'} entradas`;
+        }
+
+        function dashEntradasGuardar() {
+            const inp = document.getElementById('dash-entradas');
+            if (inp.value.length > 4) inp.value = inp.value.slice(0, 4);
+            dashPenetracion();
+            const clave = dashClave(dashValores()), v = inp.value;
+            clearTimeout(dashEntradasTimer);
+            dashEntradasTimer = setTimeout(() => {
+                if (!db || !esAdminTotal()) return;
+                const valor = v === '' ? firebase.firestore.FieldValue.delete() : Number(v);
+                db.collection('estadisticas').doc('entradas').set({ valores: { [clave]: valor } }, { merge: true })
+                    .catch(err => { console.error(err); alert('No se pudo guardar el total de entradas. Revisa los permisos de Firestore para la colección "estadisticas".'); });
+            }, 600);
         }
 
         function dashOrdenar(i) {
@@ -2310,6 +2379,7 @@ function dashExportar() { exportarExcel(dashLista, dashValores()); }
         }
 
         document.getElementById('dash-filtros').addEventListener('input', dashActualizar);
+        document.getElementById('dash-entradas').addEventListener('input', dashEntradasGuardar);
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && dashAbierto) cerrarDashboard(); });
 
         window.onload = function() {
