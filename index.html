@@ -2851,7 +2851,18 @@
         }
 
         document.getElementById('dash-filtros').addEventListener('input', dashActualizar);
-        document.getElementById('dash-entradas').addEventListener('input', dashPenetracion);
+        const CLAVE_ENTRADAS = 'taller_dash_total_entradas';
+        function guardarEntradas() {
+            try { localStorage.setItem(CLAVE_ENTRADAS, document.getElementById('dash-entradas').value); } catch (e) {}
+        }
+        function restaurarEntradas() {
+            try {
+                const v = localStorage.getItem(CLAVE_ENTRADAS);
+                if (v !== null) document.getElementById('dash-entradas').value = v;
+            } catch (e) {}
+        }
+        document.getElementById('dash-entradas').addEventListener('input', () => { guardarEntradas(); dashPenetracion(); });
+        restaurarEntradas();
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && dashAbierto) cerrarDashboard(); });
 
         window.onload = function() {
