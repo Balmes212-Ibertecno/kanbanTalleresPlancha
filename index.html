@@ -442,12 +442,34 @@
         .visor-foto-cerrar { position: absolute; top: 12px; right: 14px; width: 42px; height: 42px; border-radius: 50%; background: rgba(255,255,255,.18); color: white; font-size: 26px; border:none; cursor:pointer;}
 
         @media (max-width: 760px) { .grid-checklist { grid-template-columns: 1fr; } }
+
+        /* DASHBOARD + EXCEL */
+        .btn-excel { background: #15803d; } .btn-excel:hover { background: #166534; }
+        .btn-sec { background: #475569; } .btn-sec:hover { background: #334155; }
+        .dash-overlay { position: fixed; inset: 0; z-index: 9000; background: #161a1f; color: #f1f5f9; overflow-y: auto; padding: 14px; display: none; }
+        .dash-overlay.visible { display: block; }
+        .dash-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .dash-top h2 { font-size: 16px; font-weight: 600; color: #38bdf8; }
+        .dash-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .dash-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; background: #272d34; border: 1px solid #3b424a; border-radius: 6px; padding: 10px; margin-bottom: 12px; position: sticky; top: 0; z-index: 2; box-shadow: 0 6px 12px rgba(0,0,0,.35); }
+        .dash-f { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: #94a3b8; font-weight: 600; }
+        .dash-f select, .dash-f input { width: 100%; }
+        .dash-nota { font-size: 10px; color: #94a3b8; margin: -4px 0 12px; }
+        .dash-charts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 12px 0; }
+        .dash-tabla-wrap { overflow: auto; max-height: 420px; }
+        .dash-tabla { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .dash-tabla th { position: sticky; top: 0; background: #1e242b; color: #94a3b8; text-align: left; padding: 6px 8px; cursor: pointer; white-space: nowrap; border-bottom: 1px solid #3b424a; }
+        .dash-tabla td { padding: 5px 8px; border-bottom: 1px solid #2d333b; white-space: nowrap; }
+        .dash-tabla td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        @media (max-width: 900px) { .dash-charts { grid-template-columns: 1fr; } }
+        @media (max-width: 760px) { .dash-filtros { position: static; } }
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -467,6 +489,61 @@
             
             <div id="login-error" class="error-msg">⚠️ Contraseña incorrecta o error de conexión</div>
             <button type="button" id="btn-login" onclick="iniciarSesion()">ENTRAR AL PANEL</button>
+        </div>
+    </div>
+
+    <div id="dash-overlay" class="dash-overlay">
+        <div class="dash-top">
+            <h2>📈 Dashboard de estadísticas</h2>
+            <div class="dash-actions">
+                <button class="btn-excel" onclick="dashExportar()">📥 Exportar a Excel</button>
+                <button class="btn-sec" onclick="dashLimpiar()">Limpiar filtros</button>
+                <button class="btn-logout" style="padding:6px 12px; font-size:11px;" onclick="cerrarDashboard()">Cerrar ✕</button>
+            </div>
+        </div>
+
+        <div id="dash-filtros" class="dash-filtros">
+            <label class="dash-f">Estado
+                <select id="dash-estado">
+                    <option value="TODOS">TODOS</option>
+                    <option value="1">VEH. RETIRADO</option><option value="2">PDTE. PRESUP.</option><option value="3">PDTE. RECOGIDA</option>
+                    <option value="4">EN TALLER</option><option value="5">ACABADO</option><option value="6" selected>ARCHIVADO</option>
+                </select>
+            </label>
+            <label class="dash-f">Año <select id="dash-anio"><option value="TODOS">TODOS</option></select></label>
+            <label class="dash-f">Mes
+                <select id="dash-mes">
+                    <option value="TODOS">TODOS</option>
+                    <option value="0">ENERO</option><option value="1">FEBRERO</option><option value="2">MARZO</option>
+                    <option value="3">ABRIL</option><option value="4">MAYO</option><option value="5">JUNIO</option>
+                    <option value="6">JULIO</option><option value="7">AGOSTO</option><option value="8">SEPTIEMBRE</option>
+                    <option value="9">OCTUBRE</option><option value="10">NOVIEMBRE</option><option value="11">DICIEMBRE</option>
+                </select>
+            </label>
+            <label class="dash-f">Taller
+                <select id="dash-taller"><option value="TODOS">TODOS</option><option value="APV Cars">APV CARS</option><option value="Auto Bros">AUTO BROS</option></select>
+            </label>
+            <label class="dash-f">Pagador
+                <select id="dash-pagador"><option value="TODOS">TODOS</option><option value="COMPANIA">CIA. ASEGURADORA</option><option value="CLIENTE">CLIENTE</option></select>
+            </label>
+            <label class="dash-f">Desde <input type="date" id="dash-desde"></label>
+            <label class="dash-f">Hasta <input type="date" id="dash-hasta"></label>
+            <label class="dash-f">Días en taller (mín.) <input type="number" min="0" id="dash-dias" placeholder="0"></label>
+        </div>
+        <p class="dash-nota">Año, mes y fechas usan la fecha en que el vehículo pasa a Archivado; si aún no está archivado, su fecha de ingreso. El Excel exporta exactamente lo que ves con estos filtros.</p>
+
+        <div id="dash-kpis" class="stats-grid"></div>
+
+        <div class="dash-charts">
+            <div class="chart-box"><h4>Evolución mensual de importes (€)</h4><div style="height:240px; position:relative;"><canvas id="dash-ch-mes"></canvas></div></div>
+            <div class="chart-box"><h4>Importes por taller (€)</h4><div style="height:240px; position:relative;"><canvas id="dash-ch-taller"></canvas></div></div>
+            <div class="chart-box"><h4>Ventas ZSUB por tipo de pagador (€)</h4><div style="height:240px; position:relative;"><canvas id="dash-ch-pagador"></canvas></div></div>
+            <div class="chart-box"><h4>Vehículos por estado</h4><div style="height:240px; position:relative;"><canvas id="dash-ch-estado"></canvas></div></div>
+        </div>
+
+        <div class="chart-box">
+            <h4 id="dash-tabla-titulo">Detalle</h4>
+            <div id="dash-tabla" class="dash-tabla-wrap"></div>
         </div>
     </div>
 
@@ -648,6 +725,10 @@
                         <div>
                             <label style="font-size: 9px; color:#cbd5e1; display:block; margin-bottom: 2px;">FECHA ENTRADA TALLER:</label>
                             <input type="date" id="modal-fecha-entrada-taller" style="padding: 4px 6px; font-size: 11px; background: #272d34; color: #fff; border: 1px solid #555f6d; border-radius: 4px;" class="solo-admin">
+                        </div>
+                        <div>
+                            <label style="font-size: 9px; color:#cbd5e1; display:block; margin-bottom: 2px;">DÍAS DE REPARACIÓN (MANUAL):</label>
+                            <input type="number" id="modal-dias-reparacion" min="0" step="1" placeholder="AUTO" style="width: 90px; padding: 4px 6px; font-size: 11px; background: #272d34; color: #fff; border: 1px solid #555f6d; border-radius: 4px;" class="solo-admin">
                         </div>
                         <div>
                             <label style="font-size: 9px; color:#cbd5e1; display:block; margin-bottom: 2px;">FECHA PEDIDO RECAMBIOS:</label>
@@ -931,6 +1012,8 @@
         }
 
         function diasEnTaller(c) {
+            const m = c.diasReparacion;
+            if (m !== null && m !== undefined && m !== '' && isFinite(Number(m))) return Math.max(0, Math.round(Number(m)));
             const a = entradaTallerMs(c);
             if (a === null) return null;
             if (c.columna === COL_EN_TALLER) return diasCalendario(a, Date.now());
@@ -1046,6 +1129,7 @@
         }
 
         function cerrarSesion() {
+            cerrarDashboard();
             if (auth) {
                 auth.signOut().then(() => {
                     location.reload();
@@ -1077,6 +1161,7 @@
                 formCrear.style.display = 'none';
                 btnToggleStats.style.display = 'none';
                 statsPanel.style.display = 'none';
+                cerrarDashboard();
             } else {
                 selectorFiltro.disabled = false;
                 formCrear.style.display = esAdminEscritura ? 'flex' : 'none';
@@ -1087,6 +1172,8 @@
         }
 
         function toggleEstadisticasPanel() {
+            abrirDashboard();
+            return;
             estadisticasVisibles = !estadisticasVisibles;
             const statsPanel = document.getElementById('admin-stats-container');
             const lblToggle = document.getElementById('lbl-toggle-stats');
@@ -1278,8 +1365,8 @@
 
                     let badgeAviso = '';
                     if (c.avisoModificacionFecha) {
-                        const autorTexto = c.modificadoPor === 'taller' ? 'TALLER' : 'ADMIN';
-                        badgeAviso = `<span class="badge-aviso-cambio" onclick="descartarAviso('${esc(c.idDoc)}', event)" title="Fecha modificada por ${autorTexto} (Haz clic para quitar)">⚠️ FECHA ENTREGA MODIFICADA POR ${autorTexto} </span>`;
+                        const autorTexto = c.modificadoPor === 'taller' ? 'TALLER' : 'ADMINISTRACIÓN';
+                        badgeAviso = `<span class="badge-aviso-cambio" onclick="descartarAviso('${esc(c.idDoc)}', event)" title="Fecha modificada por ${autorTexto} (Haz clic para quitar)">⚠️ FECHA CAMBIADA (${autorTexto})</span>`;
                     }
 
                     const badgeComp = c.esCompania ? `<span class="badge-pagador badge-compania">🏢 CIA. ASEGURADORA</span>` : '';
@@ -1369,6 +1456,7 @@
             if (esAdminVista && estadisticasVisibles) {
                 actualizarEstadisticasAdmin();
             }
+            if (dashAbierto) dashActualizar();
         }
 
         function poblarFiltroAnios() {
@@ -1563,6 +1651,7 @@
             // Cargar fecha de entrada a taller (convertida a string YYYY-MM-DD para el input date)
             const msEntrada = entradaTallerMs(c);
             document.getElementById('modal-fecha-entrada-taller').value = msEntrada ? fechaYMD(msEntrada) : '';
+            document.getElementById('modal-dias-reparacion').value = (c.diasReparacion === null || c.diasReparacion === undefined || c.diasReparacion === '') ? '' : c.diasReparacion;
 
             document.getElementById('modal-fecha-pedido-recambios').value = c.fechaPedidoRecambios || '';
             document.getElementById('modal-fecha-recepcion-recambios').value = c.fechaRecepcionRecambios || '';
@@ -1789,7 +1878,8 @@
                 ...datosComunes,
                 urgente: document.getElementById('modal-urgente').checked,
                 esCompania: document.getElementById('modal-chk-compania').checked,
-                esCliente: document.getElementById('modal-chk-cliente').checked
+                esCliente: document.getElementById('modal-chk-cliente').checked,
+                diasReparacion: (v => v === '' ? null : Math.max(0, Math.round(Number(v)) || 0))(document.getElementById('modal-dias-reparacion').value)
             };
 
             const seleccionadas = [];
@@ -1891,6 +1981,336 @@
             fechaInput.value = '';
             matInput.focus();
         }
+
+        // ===== EXPORTAR A EXCEL + DASHBOARD (solo perfiles admin) =====
+        let dashAbierto = false;
+        let dashLista = [];
+        let dashFilas = [];
+        let dashOrden = { k: 'F. archivo', dir: -1 };
+        const dashCharts = {};
+        const MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+        const DASH_CAMPOS = ['estado','anio','mes','taller','pagador','desde','hasta','dias'];
+        const COLS_DINERO = ['Venta ZSUB','Coste ZSUB','Beneficio','Venta recambios','Margen recambio','Ventas ZSUB','Costes ZSUB'];
+        const COLS_TABLA = ['Matrícula','Modelo','Taller','Estado','Pagador','F. ingreso','F. entrada taller','F. entrega taller','F. archivo','Días en taller','Venta ZSUB','Coste ZSUB','Beneficio','Venta recambios'];
+        const eurFmt = n => (Number(n) || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+        const msADate = ms => (ms === null || ms === undefined) ? null : new Date(ms);
+        const media = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+
+        function fechaRefCoche(c) {
+            return c.columna === COL_ARCHIVADO ? fechaReferenciaArchivo(c) : aMs(c.fechaIngreso);
+        }
+
+        function pagadorTxt(c) {
+            if (c.esCompania && c.esCliente) return 'CIA. ASEGURADORA + CLIENTE';
+            if (c.esCompania) return 'CIA. ASEGURADORA';
+            if (c.esCliente) return 'CLIENTE';
+            return '';
+        }
+
+        function filaCoche(c, fPag) {
+            const im = importesCoche(c, fPag);
+            const ms = fechaRefCoche(c);
+            const d = ms === null ? null : new Date(ms);
+            return {
+                'Matrícula': c.matricula || '',
+                'Modelo': c.modelo || '',
+                'Taller': c.Taller || '',
+                'Estado': NOMBRES_COL_CORTOS[(c.columna || 1) - 1] || '',
+                'Pagador': pagadorTxt(c),
+                'F. ingreso': msADate(aMs(c.fechaIngreso)),
+                'F. entrada taller': msADate(entradaTallerMs(c)),
+                'F. entrega taller': msADate(aMs(c.fechaEntregaTaller)),
+                'F. archivo': msADate(c.columna === COL_ARCHIVADO ? fechaReferenciaArchivo(c) : null),
+                'F. entrega estimada': msADate(aMs(c.fechaEntrega)),
+                'Días en taller': diasEnTaller(c),
+                'Venta ZSUB': im.venta,
+                'Coste ZSUB': im.coste,
+                'Beneficio': im.venta - im.coste,
+                'Venta recambios': im.recambios,
+                'Margen recambio': im.recambios * MARGEN_RECAMBIO,
+                'Urgente': c.urgente ? 'SÍ' : 'NO',
+                'Recambio pendiente': c.recambioPendiente ? 'SÍ' : 'NO',
+                'Comentario': c.textoLibre || '',
+                _mes: d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` : ''
+            };
+        }
+
+        function filtrarCoches(f) {
+            const desde = f.desde ? aMs(f.desde) : null;
+            const hasta = f.hasta ? aMs(f.hasta) + MS_DIA - 1 : null;
+            const diasMin = f.dias === '' ? null : Number(f.dias);
+            return coches.filter(c => {
+                if (f.estado !== 'TODOS' && c.columna !== Number(f.estado)) return false;
+                if (f.taller !== 'TODOS' && c.Taller !== f.taller) return false;
+                if (f.pagador === 'COMPANIA' && !c.esCompania) return false;
+                if (f.pagador === 'CLIENTE' && !c.esCliente) return false;
+                if (f.anio !== 'TODOS' || f.mes !== 'TODOS' || desde !== null || hasta !== null) {
+                    const ms = fechaRefCoche(c);
+                    if (ms === null) return false;
+                    const d = new Date(ms);
+                    if (f.anio !== 'TODOS' && d.getFullYear() !== Number(f.anio)) return false;
+                    if (f.mes !== 'TODOS' && d.getMonth() !== Number(f.mes)) return false;
+                    if (desde !== null && ms < desde) return false;
+                    if (hasta !== null && ms > hasta) return false;
+                }
+                if (diasMin !== null) {
+                    const dt = diasEnTaller(c);
+                    if (dt === null || dt < diasMin) return false;
+                }
+                return true;
+            });
+        }
+
+        function resumir(filas, lista) {
+            const r = { n: filas.length, venta: 0, coste: 0, rec: 0, nComp: 0, nCli: 0 };
+            const dias = [];
+            filas.forEach(f => {
+                r.venta += f['Venta ZSUB']; r.coste += f['Coste ZSUB']; r.rec += f['Venta recambios'];
+                if (f['Días en taller'] !== null) dias.push(f['Días en taller']);
+            });
+            lista.forEach(c => { if (c.esCompania) r.nComp++; if (c.esCliente) r.nCli++; });
+            r.nDias = dias.length;
+            r.dias = media(dias);
+            r.benef = r.venta - r.coste;
+            r.porc = r.venta > 0 ? (r.benef / r.venta) * 100 : 0;
+            r.margRec = r.rec * MARGEN_RECAMBIO;
+            return r;
+        }
+
+        function agrupar(filas, claveFn, nombreCol) {
+            const g = {};
+            filas.forEach(f => {
+                const k = claveFn(f);
+                if (!k) return;
+                const o = g[k] || (g[k] = { n: 0, v: 0, c: 0, r: 0, d: [] });
+                o.n++; o.v += f['Venta ZSUB']; o.c += f['Coste ZSUB']; o.r += f['Venta recambios'];
+                if (f['Días en taller'] !== null) o.d.push(f['Días en taller']);
+            });
+            return Object.keys(g).sort().map(k => {
+                const o = g[k];
+                return { [nombreCol]: k, 'Vehículos': o.n, 'Ventas ZSUB': o.v, 'Costes ZSUB': o.c, 'Beneficio': o.v - o.c, 'Venta recambios': o.r, 'Margen recambio': o.r * MARGEN_RECAMBIO, 'Días medios': media(o.d) };
+            });
+        }
+
+        function descFiltros(f) {
+            const t = [];
+            if (f.estado !== 'TODOS') t.push(['Estado', NOMBRES_COL_CORTOS[Number(f.estado) - 1]]);
+            if (f.anio !== 'TODOS') t.push(['Año', f.anio]);
+            if (f.mes !== 'TODOS') t.push(['Mes', MESES[Number(f.mes)]]);
+            if (f.taller !== 'TODOS') t.push(['Taller', f.taller]);
+            if (f.pagador !== 'TODOS') t.push(['Pagador', f.pagador === 'COMPANIA' ? 'CIA. ASEGURADORA' : 'CLIENTE']);
+            if (f.desde) t.push(['Desde', f.desde]);
+            if (f.hasta) t.push(['Hasta', f.hasta]);
+            if (f.dias !== '') t.push(['Días en taller (mín.)', f.dias]);
+            return t.length ? t : [['Sin filtros', '']];
+        }
+
+        function hojaDesdeObjetos(filas) {
+            const ws = XLSX.utils.json_to_sheet(filas, { cellDates: true });
+            if (!ws['!ref']) return ws;
+            const rng = XLSX.utils.decode_range(ws['!ref']);
+            const cab = [];
+            for (let C = rng.s.c; C <= rng.e.c; C++) cab[C] = (ws[XLSX.utils.encode_cell({ r: 0, c: C })] || {}).v;
+            for (let R = 1; R <= rng.e.r; R++) for (let C = rng.s.c; C <= rng.e.c; C++) {
+                const cell = ws[XLSX.utils.encode_cell({ r: R, c: C })];
+                if (!cell) continue;
+                if (cell.t === 'd') cell.z = 'dd/mm/yyyy';
+                else if (cell.t === 'n' && COLS_DINERO.includes(cab[C])) cell.z = '#,##0.00 "€"';
+                else if (cell.t === 'n' && cab[C] === 'Días medios') cell.z = '0.0';
+            }
+            ws['!cols'] = cab.map(h => ({ wch: (h === 'Comentario' || h === 'Modelo') ? 28 : Math.max(12, String(h).length + 2) }));
+            ws['!autofilter'] = { ref: ws['!ref'] };
+            return ws;
+        }
+
+        function exportarExcel(lista, f) {
+            if (!esPerfilAdmin()) return;
+            if (typeof XLSX === 'undefined') { alert('No se pudo cargar la librería de Excel. Comprueba la conexión y recarga la página.'); return; }
+            const filas = lista.map(c => filaCoche(c, f.pagador));
+            if (!filas.length) { alert('No hay vehículos con los filtros actuales.'); return; }
+            const r = resumir(filas, lista);
+            const r1 = n => Math.round(n * 10) / 10;
+            const aoa = [
+                ['Estadísticas · Control de Taller'], ['Generado el', formatoDia(Date.now())], [],
+                ['Filtros aplicados'], ...descFiltros(f), [],
+                ['Indicador', 'Valor', 'Unidad'],
+                ['Vehículos', r.n, ''],
+                ['Tiempo medio de reparación', r.dias === null ? '' : r1(r.dias), 'días'],
+                ['Ventas ZSUB', r.venta, '€'],
+                ['Costes ZSUB', r.coste, '€'],
+                ['Beneficio neto', r.benef, '€'],
+                ['% Margen ZSUB', r1(r.porc), '%'],
+                ['Venta recambios', r.rec, '€'],
+                ['Margen recambio', r.margRec, '€'],
+                ['Vehículos Cia. Aseguradora', r.nComp, ''],
+                ['Vehículos Cliente', r.nCli, '']
+            ];
+            const wsR = XLSX.utils.aoa_to_sheet(aoa);
+            aoa.forEach((fila, i) => {
+                const c = wsR[XLSX.utils.encode_cell({ r: i, c: 1 })];
+                if (c && c.t === 'n') c.z = fila[2] === '€' ? '#,##0.00 "€"' : (fila[2] ? '0.0' : '0');
+            });
+            wsR['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 8 }];
+
+            const sinInternos = o => Object.fromEntries(Object.entries(o).filter(([k]) => k[0] !== '_'));
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, wsR, 'Resumen');
+            XLSX.utils.book_append_sheet(wb, hojaDesdeObjetos(filas.map(sinInternos)), 'Detalle');
+            XLSX.utils.book_append_sheet(wb, hojaDesdeObjetos(agrupar(filas, x => x._mes, 'Mes')), 'Por mes');
+            XLSX.utils.book_append_sheet(wb, hojaDesdeObjetos(agrupar(filas, x => x['Taller'], 'Taller')), 'Por taller');
+            XLSX.writeFile(wb, `Estadisticas_Taller_${fechaYMD(Date.now())}.xlsx`, { cellDates: true });
+        }
+
+function dashExportar() { exportarExcel(dashLista, dashValores()); }
+
+        function dashValores() {
+            const f = {};
+            DASH_CAMPOS.forEach(k => { f[k] = document.getElementById('dash-' + k).value; });
+            return f;
+        }
+
+        function dashLimpiar() {
+            DASH_CAMPOS.forEach(k => {
+                const el = document.getElementById('dash-' + k);
+                el.value = k === 'estado' ? String(COL_ARCHIVADO) : (el.tagName === 'SELECT' ? 'TODOS' : '');
+            });
+            dashActualizar();
+        }
+
+        function abrirDashboard() {
+            if (!esPerfilAdmin()) return;
+            dashAbierto = true;
+            document.getElementById('dash-overlay').classList.add('visible');
+            dashActualizar();
+        }
+
+        function cerrarDashboard() {
+            dashAbierto = false;
+            const o = document.getElementById('dash-overlay');
+            if (o) o.classList.remove('visible');
+        }
+
+        function dashPoblarAnios() {
+            const sel = document.getElementById('dash-anio');
+            const anios = new Set([new Date().getFullYear()]);
+            coches.forEach(c => { const ms = fechaRefCoche(c); if (ms !== null) anios.add(new Date(ms).getFullYear()); });
+            const lista = [...anios].sort((a, b) => b - a);
+            const firma = lista.join(',');
+            if (sel.dataset.firma === firma) return;
+            const previo = sel.value || 'TODOS';
+            sel.innerHTML = '<option value="TODOS">TODOS</option>' + lista.map(a => `<option value="${a}">${a}</option>`).join('');
+            sel.value = lista.map(String).includes(previo) ? previo : 'TODOS';
+            sel.dataset.firma = firma;
+        }
+
+        function dashGrafico(id, cfg) {
+            if (typeof Chart === 'undefined') return;
+            if (dashCharts[id]) dashCharts[id].destroy();
+            dashCharts[id] = new Chart(document.getElementById(id).getContext('2d'), cfg);
+        }
+
+        function dashActualizar() {
+            if (!dashAbierto || !esPerfilAdmin()) return;
+            dashPoblarAnios();
+            const f = dashValores();
+            dashLista = filtrarCoches(f);
+            dashFilas = dashLista.map(c => filaCoche(c, f.pagador));
+            const r = resumir(dashFilas, dashLista);
+
+            const kpi = (t, v, color, sub) => `<div class="stat-card"><div class="title">${t}</div><div class="value" style="${color ? 'color:' + color : ''}">${v}</div><div class="subtext">${sub || ''}</div></div>`;
+            document.getElementById('dash-kpis').innerHTML =
+                kpi('🚗 Vehículos', r.n, '', 'Con los filtros actuales') +
+                kpi('⏱️ Tiempo medio rep.', r.dias === null ? '-' : `${r.dias.toFixed(1).replace('.', ',')} días`, '', `${r.nDias} de ${r.n} coches con fechas`) +
+                kpi('💶 Ventas ZSUB', eurFmt(r.venta), '#10b981') +
+                kpi('📉 Costes ZSUB', eurFmt(r.coste), '#f87171') +
+                kpi('📈 Beneficio neto', eurFmt(r.benef), '#38bdf8', 'Venta - Costes') +
+                kpi('% Margen ZSUB', r.porc.toFixed(1).replace('.', ',') + ' %', '#34d399') +
+                kpi('🔩 Venta recambios', eurFmt(r.rec), '#fbbf24') +
+                kpi('€ Margen recambio', eurFmt(r.margRec), '#f43f5e') +
+                kpi('💳 Pagador', `${r.nComp} CIA. ASEGURADORA<br>${r.nCli} CLIENTE`, '#e2e8f0', '');
+
+            const ejes = { x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }, y: { grace: '12%', ticks: { color: '#94a3b8' }, grid: { color: '#334155' } } };
+            const leyenda = { labels: { color: '#cbd5e1', font: { size: 10 } } };
+            const base = { responsive: true, maintainAspectRatio: false };
+            const series = (filas, claves) => [
+                { label: 'Ventas ZSUB (€)', data: claves.map(k => k.venta), backgroundColor: '#10b981' },
+                { label: 'Costes ZSUB (€)', data: claves.map(k => k.coste), backgroundColor: '#f87171' },
+                { label: 'Venta recambios (€)', data: claves.map(k => k.rec), backgroundColor: '#fbbf24' }
+            ];
+
+            const meses = agrupar(dashFilas, x => x._mes, 'Mes');
+            dashGrafico('dash-ch-mes', {
+                type: 'bar',
+                data: {
+                    labels: meses.map(m => { const [y, mm] = m['Mes'].split('-'); return `${MESES[Number(mm) - 1].slice(0, 3)} ${y.slice(-2)}`; }),
+                    datasets: series(dashFilas, meses.map(m => ({ venta: m['Ventas ZSUB'], coste: m['Costes ZSUB'], rec: m['Venta recambios'] })))
+                },
+                options: { ...base, plugins: { legend: leyenda }, scales: ejes }
+            });
+
+            const talleres = f.taller === 'TODOS' ? ['APV Cars', 'Auto Bros'] : [f.taller];
+            const porTaller = talleres.map(t => resumir(dashFilas.filter(x => x['Taller'] === t), []));
+            dashGrafico('dash-ch-taller', {
+                type: 'bar',
+                data: { labels: talleres.map(t => t.toUpperCase()), datasets: series(dashFilas, porTaller.map(p => ({ venta: p.venta, coste: p.coste, rec: p.rec }))) },
+                plugins: [pluginImportesVisibles],
+                options: { ...base, plugins: { tooltip: { enabled: false }, legend: leyenda }, scales: ejes }
+            });
+
+            const vComp = f.pagador === 'CLIENTE' ? 0 : dashLista.reduce((a, c) => a + (c.esCompania ? importesPagador(c, 'comp').venta : 0), 0);
+            const vCli = f.pagador === 'COMPANIA' ? 0 : dashLista.reduce((a, c) => a + (c.esCliente ? importesPagador(c, 'cli').venta : 0), 0);
+            dashGrafico('dash-ch-pagador', {
+                type: 'doughnut',
+                data: { labels: ['Cia. Aseguradora (€)', 'Cliente (€)'], datasets: [{ data: [vComp > 0 ? vComp : null, vCli > 0 ? vCli : null], backgroundColor: ['#3b82f6', '#eab308'], borderWidth: 1, borderColor: '#272d34' }] },
+                plugins: [pluginImportesVisibles],
+                options: { ...base, plugins: { tooltip: { enabled: false }, legend: { position: 'bottom', ...leyenda } } }
+            });
+
+            dashGrafico('dash-ch-estado', {
+                type: 'bar',
+                data: {
+                    labels: NOMBRES_COL_CORTOS,
+                    datasets: [{ label: 'Vehículos', data: NOMBRES_COL_CORTOS.map((_, i) => dashLista.filter(c => c.columna === i + 1).length), backgroundColor: ['#64748b', '#a78bfa', '#38bdf8', '#f59e0b', '#10b981', '#94a3b8'] }]
+                },
+                options: { ...base, plugins: { legend: { display: false } }, scales: { ...ejes, y: { ...ejes.y, ticks: { color: '#94a3b8', precision: 0 } } } }
+            });
+
+            dashTabla();
+        }
+
+        function dashOrdenar(i) {
+            const k = COLS_TABLA[i];
+            dashOrden = { k, dir: dashOrden.k === k ? -dashOrden.dir : 1 };
+            dashTabla();
+        }
+
+        function dashTabla() {
+            const MAX = 500;
+            const { k, dir } = dashOrden;
+            const val = x => (x[k] instanceof Date ? x[k].getTime() : x[k]);
+            const vacio = v => v === null || v === undefined || v === '';
+            const orden = [...dashFilas].sort((a, b) => {
+                const va = val(a), vb = val(b);
+                if (vacio(va) && vacio(vb)) return 0;
+                if (vacio(va)) return 1;
+                if (vacio(vb)) return -1;
+                return (typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb), 'es')) * dir;
+            });
+            document.getElementById('dash-tabla-titulo').innerText = `Detalle (${dashFilas.length} vehículos${dashFilas.length > MAX ? ` · se muestran ${MAX}, el Excel incluye todos` : ''})`;
+            if (!orden.length) { document.getElementById('dash-tabla').innerHTML = '<p style="padding:12px; font-size:12px; color:#94a3b8;">Ningún vehículo coincide con estos filtros. Prueba a quitar alguno.</p>'; return; }
+            const celda = (c, v) => {
+                if (v instanceof Date) return formatoDia(v.getTime());
+                if (vacio(v)) return '-';
+                return COLS_DINERO.includes(c) ? eurFmt(v) : esc(v);
+            };
+            const esNum = c => COLS_DINERO.includes(c) || c === 'Días en taller';
+            const cab = COLS_TABLA.map((c, i) => `<th onclick="dashOrdenar(${i})">${esc(c)}${c === k ? (dir === 1 ? ' ▲' : ' ▼') : ''}</th>`).join('');
+            const filas = orden.slice(0, MAX).map(x => '<tr>' + COLS_TABLA.map(c => `<td class="${esNum(c) ? 'num' : ''}"${c === 'Matrícula' ? ' style="font-weight:700;"' : ''}>${celda(c, x[c])}</td>`).join('') + '</tr>').join('');
+            document.getElementById('dash-tabla').innerHTML = `<table class="dash-tabla"><thead><tr>${cab}</tr></thead><tbody>${filas}</tbody></table>`;
+        }
+
+        document.getElementById('dash-filtros').addEventListener('input', dashActualizar);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && dashAbierto) cerrarDashboard(); });
 
         window.onload = function() {
             inicializarAuth();
