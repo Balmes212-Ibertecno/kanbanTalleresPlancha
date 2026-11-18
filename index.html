@@ -545,7 +545,7 @@
             <div class="stat-card" id="dash-card-entradas">
                 <div class="title">🚪 Total entradas de taller</div>
                 <input type="number" min="0" max="9999" step="1" id="dash-entradas" placeholder="0000" style="display:block; width:84px; margin:6px auto; text-align:center; font-size:16px; font-weight:700;">
-                <div class="subtext">Dato manual · se guarda por año / mes / taller / pagador</div>
+                <div class="subtext">Dato manual · cálculo del mes actual</div>
             </div>
             <div class="stat-card" id="dash-card-pen">
                 <div class="title">🎯 % penetración</div>
@@ -1194,18 +1194,6 @@
         function toggleEstadisticasPanel() {
             abrirDashboard();
             return;
-            estadisticasVisibles = !estadisticasVisibles;
-            const statsPanel = document.getElementById('admin-stats-container');
-            const lblToggle = document.getElementById('lbl-toggle-stats');
-
-            if (estadisticasVisibles) {
-                statsPanel.style.display = 'block';
-                lblToggle.innerText = 'OCULTAR ESTADÍSTICAS';
-                actualizarEstadisticasAdmin();
-            } else {
-                statsPanel.style.display = 'none';
-                lblToggle.innerText = 'MOSTRAR ESTADÍSTICAS';
-            }
         }
 
         function escucharFirebase() {
@@ -1668,7 +1656,6 @@
 
             document.getElementById('modal-recambio-pendiente').checked = !!c.recambioPendiente;
             
-            // Cargar fecha de entrada a taller (convertida a string YYYY-MM-DD para el input date)
             const msEntrada = entradaTallerMs(c);
             document.getElementById('modal-fecha-entrada-taller').value = msEntrada ? fechaYMD(msEntrada) : '';
             document.getElementById('modal-dias-reparacion').value = (c.diasReparacion === null || c.diasReparacion === undefined || c.diasReparacion === '') ? '' : c.diasReparacion;
@@ -1709,7 +1696,6 @@
                     el.disabled = !esAdminEscritura;
                 }
             });
-            // Permitir que el admin edite la fecha de entrada
             document.getElementById('modal-fecha-entrada-taller').disabled = !esAdminEscritura;
             
             document.getElementById('btn-guardar-modal').style.display = puedeComentar ? 'inline-block' : 'none';
@@ -2143,24 +2129,6 @@
             return ws;
         }
 
-        // ---- Excel con DASHBOARD interactivo (gráficos nativos + filtros desplegables) ----
-        const ORDEN_MASCARAS = [...Array(16).keys()].sort((a, b) => (a.toString(2).replace(/0/g, '').length - b.toString(2).replace(/0/g, '').length) || a - b);
-        function entradasPorMascara(db, fil) {
-            const ents = Object.entries(db || {}).map(([k, v]) => { const p = k.split('|'); return { v: [p[0], p[1], p[2], p[3] || 'TODOS'], n: Number(v) }; }).filter(e => isFinite(e.n));
-            return ORDEN_MASCARAS.map(mask => {
-                const ok = ents.filter(e => e.v.every((val, i) => fil[i] !== 'TODOS' ? val === fil[i] : (((mask >> i) & 1) ? val !== 'TODOS' : val === 'TODOS')));
-                return { mask, n: ok.length, sum: ok.reduce((a, e) => a + e.n, 0) };
-            });
-        }
-        function resolverEntradas(db, anio, mes, taller, pagador) {
-            const r = entradasPorMascara(db, [String(anio), String(mes), String(taller), String(pagador || 'TODOS')]).find(m => m.n > 0);
-            return r ? r.sum : 0;
-        }
-        function resolverEntradasPag(db, anio, mes, taller, pagador) {
-            const f = pp => entradasPorMascara(db, [String(anio), String(mes), String(taller), pp]).find(m => m.n > 0);
-            const r = f(String(pagador || 'TODOS')) || f('TODOS');
-            return r ? r.sum : 0;
-        }
         function crearXlsxDashboard(R, cfg) {
             const JSZip = cfg.JSZip;
             const ESTADOS = cfg.estados, MESES = cfg.meses, MARGEN = cfg.margen;
@@ -2170,7 +2138,6 @@
             const ref = (r, c) => colName(c) + (r + 1);
             const serMs = ms => { const d = new Date(ms); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5 + 25569; };
             const serISO = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) / 864e5 + 25569 : null; };
-            const r1 = n => Math.round(n * 10) / 10;
             const NA = { err: '#N/A' };
         
             const f0 = cfg.filtros;
@@ -2353,7 +2320,8 @@
             const mediaDias = arr => { const d = arr.filter(o => o.dias !== null).map(o => o.dias); return d.length ? d.reduce((a, b) => a + b, 0) / d.length : null; };
             const K = { n: inc.length, dias: mediaDias(inc), nDias: inc.filter(o => o.dias !== null && o.dias >= 0).length, venta: sum(inc, 'ag'), coste: sum(inc, 'ah'), rec: sum(inc, 'ai'), nCia: inc.filter(o => o.esCia).length, nCli: inc.filter(o => o.esCli).length };
             K.benef = K.venta - K.coste; K.porc = K.venta > 0 ? K.benef / K.venta : 0; K.mrec = K.rec * MARGEN;
-            K.ent = resolverEntradasPag(cfg.entradas, f0.anio, f0.mes, f0.taller, f0.pagador);
+            const inputEntradasVal = Number(document.getElementById('dash-entradas').value) || 0;
+            K.ent = inputEntradasVal;
             K.nPen = R.filter(o => o.pinc).length;
             K.pen = K.ent > 0 ? K.nPen / K.ent : '-';
         
@@ -2389,9 +2357,6 @@
                 ['Taller', ['TODOS', ...TALLERES]], ['Pagador', ['TODOS', 'CIA. ASEGURADORA', 'CLIENTE']]
             ];
             listas.forEach(([h, vals], c) => { Li.set(0, c, { v: h, s: S.th }); vals.forEach((v, i) => Li.set(i + 1, c, { v, s: S.lst })); });
-            Li.set(0, 6, { v: 'Entradas: clave año|mes 0-11|taller|pagador', s: S.th }); Li.set(0, 7, { v: 'Total entradas', s: S.th });
-            const entr = Object.entries(cfg.entradas || {}).sort();
-            entr.forEach(([k, v], i) => { Li.set(i + 1, 6, { v: k, s: S.lstIn }); Li.set(i + 1, 7, { v: Number(v), s: S.lstIn }); });
             Li.set(0, 9, { v: 'Parámetros', s: S.th }); Li.set(0, 10, { v: 'Valor', s: S.th });
             Li.set(1, 9, { v: 'Margen sobre venta de recambios', s: S.lst }); Li.set(1, 10, { v: MARGEN, s: S.lstIn });
             Li.set(2, 9, { v: 'Nº de mes seleccionado (auxiliar)', s: S.lst });
@@ -2402,33 +2367,6 @@
                 ['Taller seleccionado (aux)', '"k"&flt_Taller', FX.taller], ['Pagador seleccionado (aux)', '"k"&IF(flt_Pagador="CIA. ASEGURADORA","COMPANIA",flt_Pagador)', auxPag]].forEach(([t, f, v], i) => {
                 Li.set(3 + i, 9, { v: t, s: S.lst }); Li.set(3 + i, 10, { f, v: 'k' + v, s: S.lst });
             });
-            ['Año (aux)', 'Mes (aux)', 'Taller (aux)', 'Pagador (aux)'].forEach((h, c) => Li.set(0, 12 + c, { v: h, s: S.thCalc }));
-            for (let i = 0; i < 100; i++) {
-                const e = i + 2, g = `$G${e}`, p1 = `FIND("|",${g})`, p2 = `FIND("|",${g},${p1}+1)`, p3 = `FIND("|",${g},${p2}+1)`;
-                const parts = entr[i] ? entr[i][0].split('|') : null;
-                const val = j => parts ? 'k' + (j === 2 ? parts[2] : j === 3 ? (parts[3] || 'TODOS') : parts[j]) : '';
-                Li.set(i + 1, 12, { f: `IFERROR(IF(${g}="","","k"&LEFT(${g},${p1}-1)),"")`, v: val(0), s: S.lst });
-                Li.set(i + 1, 13, { f: `IFERROR(IF(${g}="","","k"&MID(${g},${p1}+1,${p2}-${p1}-1)),"")`, v: val(1), s: S.lst });
-                Li.set(i + 1, 14, { f: `IFERROR(IF(${g}="","","k"&IFERROR(MID(${g},${p2}+1,${p3}-${p2}-1),MID(${g},${p2}+1,100))),"")`, v: val(2), s: S.lst });
-                Li.set(i + 1, 15, { f: `IFERROR(IF(${g}="","","k"&IFERROR(MID(${g},${p3}+1,100),"TODOS")),"")`, v: val(3), s: S.lst });
-            }
-            const LA = 'Listas!$M$2:$M$101', LM = 'Listas!$N$2:$N$101', LT = 'Listas!$O$2:$O$101', LP = 'Listas!$P$2:$P$101', LH = 'Listas!$H$2:$H$101';
-            const crit = (mask, aux) => [LA, LM, LT, LP].map((rg, i) => `${rg},IF(${aux[i]}="kTODOS",${(mask >> i) & 1 ? '"<>kTODOS"' : '"kTODOS"'},${aux[i]})`).join(',');
-            [[17, ['Listas!$K$4', 'Listas!$K$5', 'Listas!$K$6', 'Listas!$K$7'], String(f0.pagador), 'R', 'S'],
-             [22, ['Listas!$K$4', 'Listas!$K$5', 'Listas!$K$6', '"kTODOS"'], 'TODOS', 'W', 'X']].forEach(([c0, aux, pag, cP, cN], t) => {
-                const cacheMasc = entradasPorMascara(cfg.entradas, [String(f0.anio), String(f0.mes), String(f0.taller), pag]);
-                [t ? 'Prioridad (respaldo)' : 'Prioridad', 'Nº entradas', 'Suma', 'Válida'].forEach((h, c) => Li.set(0, c0 + c, { v: h, s: S.thCalc }));
-                ORDEN_MASCARAS.forEach((mask, i) => {
-                    const r = i + 1, e = r + 1, cm = cacheMasc[i];
-                    Li.set(r, c0, { v: i + 1, s: S.lstInt });
-                    Li.set(r, c0 + 1, { f: `COUNTIFS(${crit(mask, aux)},${LH},">=0")`, v: cm.n, s: S.lstInt });
-                    Li.set(r, c0 + 2, { f: `SUMIFS(${LH},${crit(mask, aux)})`, v: cm.sum, s: S.lstInt });
-                    Li.set(r, c0 + 3, { f: `IF(${cN}${e}>0,${cP}${e},"")`, v: cm.n > 0 ? i + 1 : '', s: S.lstInt });
-                });
-            });
-            const entradasFormula = 'IF(COUNT(Listas!$U$2:$U$17)>0,INDEX(Listas!$T$2:$T$17,MIN(Listas!$U$2:$U$17)),IF(COUNT(Listas!$Z$2:$Z$17)>0,INDEX(Listas!$Y$2:$Y$17,MIN(Listas!$Z$2:$Z$17)),0))';
-            Li.set(8, 9, { v: 'Las celdas amarillas son editables. En "Entradas" puedes añadir filas con la clave año|mes|taller (mes 0 = enero … 11 = diciembre; pagador COMPANIA o CLIENTE; usa TODOS para sin filtrar), p. ej. 2026|TODOS|APV Cars|CLIENTE. Si falta el dato exacto de un filtro (p. ej. solo el año), se suman las entradas más detalladas (los meses de ese año). Admite hasta 100 filas.', s: S.lstHelp });
-            Li.merge(8, 9, 13, 10, S.lstHelp);
         
             const T = new Hoja();
             T.tab = '38BDF8';
@@ -2527,7 +2465,7 @@
                 ['€ Margen recambio', null, K.mrec, FMT.eur, 'E11D48', 'Recambios × margen', 'mrec'],
                 ['🏢 Veh. Cia. aseguradora', `COUNTIFS(${dr('inc')},1,${dr('esCia')},1)`, K.nCia, FMT.int, '334155', 'Vehículos', null],
                 ['👤 Veh. Cliente', `COUNTIFS(${dr('inc')},1,${dr('esCli')},1)`, K.nCli, FMT.int, '334155', 'Vehículos', null],
-                ['🚪 Total entradas de taller', entradasFormula, K.ent, FMT.ent, '334155', 'Dato manual · hoja Listas', null],
+                ['🚪 Total entradas de taller', inputEntradasVal, K.ent, FMT.int, '334155', 'Dato manual del mes actual', null],
                 ['🎯 % penetración', null, K.pen, FMT.pct, '0284C7', 'Reparados / entradas', 'pen']
             ];
             const cardRows = [10, 14];
@@ -2613,7 +2551,7 @@
                 const col = i % 2, band = Math.floor(i / 2), r0 = 19 + band * 18;
                 const c0 = col ? 13 : 1, c1 = col ? 24 : 12;
                 return `<xdr:twoCellAnchor><xdr:from><xdr:col>${c0}</xdr:col><xdr:colOff>30000</xdr:colOff><xdr:row>${r0}</xdr:row><xdr:rowOff>30000</xdr:rowOff></xdr:from><xdr:to><xdr:col>${c1}</xdr:col><xdr:colOff>470000</xdr:colOff><xdr:row>${r0 + 16}</xdr:row><xdr:rowOff>170000</xdr:rowOff></xdr:to>` +
-                    `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${i + 2}" name="Gráfico ${i + 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><xdr:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rId${i + 1}"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>`;
+                    `<xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="${i + 2}" name="Gráfico ${i + 1}"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><xdr:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rId${i + 1}"/></a:graphicData></xdr:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor>`;
             };
             const drawingXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' + charts.map((_, i) => anchor(i)).join('') + '</xdr:wsDr>';
         
@@ -2639,7 +2577,7 @@
             const ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
                 '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
                 sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') +
-                '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>' +
+                '<Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.drawing+xml"/>' +
                 charts.map((_, i) => `<Override PartName="/xl/charts/chart${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`).join('') + '</Types>';
         
             const zip = new JSZip();
@@ -2677,7 +2615,7 @@
             try {
                 const zip = crearXlsxDashboard(coches.map(filaDatos), {
                     JSZip, estados: NOMBRES_COL_CORTOS, meses: MESES, margen: MARGEN_RECAMBIO, filtros: f,
-                    entradas: dashEntradasDb, generado: new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })
+                    generado: new Date().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })
                 });
                 const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
                 const a = document.createElement('a');
@@ -2699,7 +2637,7 @@
             if (!filas.length) { alert('No hay vehículos con los filtros actuales.'); return; }
             const r = resumir(filas, lista);
             const r1 = n => Math.round(n * 10) / 10;
-            const ent = Number(resolverEntradasPag(dashEntradasDb, f.anio, f.mes, f.taller, f.pagador)) || 0;
+            const ent = Number(document.getElementById('dash-entradas').value) || 0;
             const aoa = [
                 ['Estadísticas · Control de Taller'], ['Generado el', formatoDia(Date.now())], [],
                 ['Filtros aplicados'], ...descFiltros(f), [],
@@ -2751,7 +2689,6 @@
         function abrirDashboard() {
             if (!esPerfilAdmin()) return;
             dashAbierto = true;
-            dashEntradasSuscribir();
             document.getElementById('dash-overlay').classList.add('visible');
             dashActualizar();
         }
@@ -2849,55 +2786,17 @@
             });
 
             dashTabla();
-            dashEntradasCargar(f);
-        }
-
-        // Total de entradas (manual, solo ADMIN lo edita; se guarda en Firestore) y % penetración = reparados / entradas
-        let dashEntradasDb = {}, dashEntradasSuscrito = false, dashEntradasTimer = null;
-        const dashClave = f => `${f.anio}|${f.mes}|${f.taller}|${f.pagador}`;
-        const dashClaveAntigua = f => `${f.anio}|${f.mes}|${f.taller}`;
-
-        function dashEntradasSuscribir() {
-            if (dashEntradasSuscrito || !db) return;
-            dashEntradasSuscrito = true;
-            db.collection('estadisticas').doc('entradas').onSnapshot(snap => {
-                dashEntradasDb = (snap.exists && snap.data().valores) || {};
-                if (dashAbierto) dashEntradasCargar(dashValores());
-            }, err => { console.error(err); dashEntradasSuscrito = false; });
-        }
-
-        function dashEntradasCargar(f) {
-            const admin = esAdminTotal();
-            document.getElementById('dash-card-entradas').style.display = admin ? '' : 'none';
-            const inp = document.getElementById('dash-entradas');
-            if (admin && document.activeElement !== inp) {
-                const resolvedVal = resolverEntradasPag(dashEntradasDb, f.anio, f.mes, f.taller, f.pagador);
-                inp.value = (resolvedVal > 0) ? resolvedVal : '';
-                inp.placeholder = '0000';
-            }
             dashPenetracion();
         }
 
         function dashPenetracion() {
+            const admin = esAdminTotal();
+            document.getElementById('dash-card-entradas').style.display = admin ? '' : 'none';
             const inp = document.getElementById('dash-entradas');
             const fv = dashValores();
-            const v = (esAdminTotal() && document.activeElement === inp) ? inp.value : resolverEntradasPag(dashEntradasDb, fv.anio, fv.mes, fv.taller, fv.pagador);
+            const v = inp.value;
             const e = Number(v), n = filtrarCoches({ ...fv, estado: 'TODOS', dias: '' }).length, ok = v !== undefined && v !== null && v !== '' && e > 0;
             document.getElementById('dash-pen-val').innerText = ok ? (n / e * 100).toFixed(1).replace('.', ',') + ' %' : '-';
-        }
-
-        function dashEntradasGuardar() {
-            const inp = document.getElementById('dash-entradas');
-            if (inp.value.length > 4) inp.value = inp.value.slice(0, 4);
-            dashPenetracion();
-            const clave = dashClave(dashValores()), v = inp.value;
-            clearTimeout(dashEntradasTimer);
-            dashEntradasTimer = setTimeout(() => {
-                if (!db || !esAdminTotal()) return;
-                const valor = v === '' ? firebase.firestore.FieldValue.delete() : Number(v);
-                db.collection('estadisticas').doc('entradas').set({ valores: { [clave]: valor } }, { merge: true })
-                    .catch(err => { console.error(err); alert('No se pudo guardar el total de entradas. Revisa los permisos de Firestore para la colección "estadisticas".'); });
-            }, 600);
         }
 
         function dashOrdenar(i) {
@@ -2932,7 +2831,7 @@
         }
 
         document.getElementById('dash-filtros').addEventListener('input', dashActualizar);
-        document.getElementById('dash-entradas').addEventListener('input', dashEntradasGuardar);
+        document.getElementById('dash-entradas').addEventListener('input', dashPenetracion);
         document.addEventListener('keydown', e => { if (e.key === 'Escape' && dashAbierto) cerrarDashboard(); });
 
         window.onload = function() {
