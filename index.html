@@ -182,7 +182,7 @@
         /* TABLERO KANBAN (6 COLUMNAS) */
         .tablero-grid {
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
+            grid-template-columns: repeat(7, 1fr);
             gap: 8px;
             width: 100%;
             flex-grow: 1;
@@ -231,6 +231,7 @@
         .col-titulo-4 { background-color: #881337; }
         .col-titulo-5 { background-color: #15803d; }
         .col-titulo-6 { background-color: #525966; }
+        .col-titulo-7 { background-color: #7c2d12; }
         
         .tarjeta { 
             background-color: #404040 !important; 
@@ -500,7 +501,7 @@
                 <select id="dash-estado">
                     <option value="TODOS">TODOS</option>
                     <option value="1">VEH. RETIRADO</option><option value="2">PDTE. PRESUP.</option><option value="3">PDTE. RECOGIDA</option>
-                    <option value="4">EN TALLER</option><option value="5">ACABADO</option><option value="6" selected>ARCHIVADO</option>
+                    <option value="4">EN TALLER</option><option value="5">ACABADO</option><option value="6" selected>ARCHIVADO</option><option value="7">VEH. NO REPARADOS</option>
                 </select>
             </label>
             <label class="dash-f">Año <select id="dash-anio"><option value="TODOS">TODOS</option></select></label>
@@ -696,6 +697,7 @@
             <div id="col-4" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 4)"></div>
             <div id="col-5" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 5)"></div>
             <div id="col-6" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 6)"></div>
+            <div id="col-7" class="columna-div" ondragover="permitirSoltarColumna(event)" ondragleave="salirColumna(event)" ondrop="soltarEnColumna(event, 7)"></div>
         </div>
     </div>
 
@@ -880,7 +882,8 @@
         const COL_EN_TALLER = 4;
         const COL_ACABADO = 5;
         const COL_ARCHIVADO = 6;
-        const TOTAL_COLS = 6;
+        const COL_NO_REPARADOS = 7;
+        const TOTAL_COLS = 7;
 
         const cols = [
             "Vehículo retirado",
@@ -888,9 +891,10 @@
             "pendiente de recogida",
             "en taller reparador",
             "acabado / pdte facturar",
-            "archivado"
+            "archivado",
+            "Veh. NO reparados"
         ];
-        const NOMBRES_COL_CORTOS = ["VEH. RETIRADO", "PDTE. PRESUP.", "PDTE. RECOGIDA", "EN TALLER", "ACABADO", "ARCHIVADO"];
+        const NOMBRES_COL_CORTOS = ["VEH. RETIRADO", "PDTE. PRESUP.", "PDTE. RECOGIDA", "EN TALLER", "ACABADO", "ARCHIVADO", "VEH. NO REPARADOS"];
 
         const esPerfilAdmin = () => rolUsuario === 'ADMIN' || rolUsuario === 'ADMIN_LECTURA';
         const esAdminTotal = () => rolUsuario === 'ADMIN';
@@ -1943,6 +1947,8 @@
             } else if (nCol === COL_EN_TALLER) {
                 if (antes < COL_EN_TALLER || !aMs(c.fechaEntradaTaller)) cambios.fechaEntradaTaller = ahora;
                 cambios.fechaEntregaTaller = null;
+            } else if (nCol === COL_NO_REPARADOS) {
+                // No se repara: no se marca fecha de fin de reparación
             } else if (antes < COL_ACABADO || !aMs(c.fechaEntregaTaller)) {
                 cambios.fechaEntregaTaller = ahora;
             }
@@ -2534,8 +2540,8 @@
                     { name: 'Venta recambios', nameRef: hdr('O'), ref: `Tablas!$O$4:$O$${tEnd}`, vals: porTaller.map(p => p.r), color: 'FBBF24' }] },
                 { title: 'Ventas ZSUB por tipo de pagador (€)', type: 'doughnut', fmt: EUR, lblFmt: EURL, labels: 1, catRef: `Tablas!$K$${pagStart}:$K$${pagStart + 1}`, cats: pagadores.map(p => p.nombre), series: [
                     { name: 'Ventas ZSUB', nameRef: `Tablas!$M$${pagStart - 1}`, ref: `Tablas!$M$${pagStart}:$M$${pagStart + 1}`, vals: pagadores.map(p => p.v), pointColors: ['3B82F6', 'EAB308'] }] },
-                { title: 'Vehículos por estado', type: 'bar', fmt: '0', lblFmt: '0;-0;', labels: 1, int: 1, noLegend: 1, catRef: `Tablas!$K$${estStart}:$K$${estStart + 5}`, cats: ESTADOS, series: [
-                    { name: 'Vehículos', nameRef: `Tablas!$L$${estStart - 1}`, ref: `Tablas!$L$${estStart}:$L$${estStart + 5}`, vals: porEstado.map(p => p.n), color: '38BDF8', pointColors: ['64748B', 'A78BFA', '38BDF8', 'F59E0B', '10B981', '94A3B8'] }] },
+                { title: 'Vehículos por estado', type: 'bar', fmt: '0', lblFmt: '0;-0;', labels: 1, int: 1, noLegend: 1, catRef: `Tablas!$K$${estStart}:$K$${estStart + ESTADOS.length - 1}`, cats: ESTADOS, series: [
+                    { name: 'Vehículos', nameRef: `Tablas!$L$${estStart - 1}`, ref: `Tablas!$L$${estStart}:$L$${estStart + ESTADOS.length - 1}`, vals: porEstado.map(p => p.n), color: '38BDF8', pointColors: ['64748B', 'A78BFA', '38BDF8', 'F59E0B', '10B981', '94A3B8', 'EF4444'] }] },
                 { title: 'Beneficio neto mensual (€)', type: 'line', fmt: EUR, noLegend: 1, catRef: mRange('B'), cats: catsM, series: [{ name: 'Beneficio', nameRef: hdr('G'), ref: mRange('G'), vals: mVals('b'), color: '0284C7' }] },
                 { title: 'Vehículos por mes', type: 'bar', fmt: '0', int: 1, noLegend: 1, catRef: mRange('B'), cats: catsM, series: [{ name: 'Vehículos', nameRef: hdr('C'), ref: mRange('C'), vals: mVals('n'), color: '6366F1' }] },
                 { title: 'Tiempo medio de reparación por mes (días)', type: 'line', fmt: '0.0', noLegend: 1, catRef: mRange('B'), cats: catsM, series: [{ name: 'Días medios', nameRef: hdr('I'), ref: mRange('I'), vals: mVals('d'), color: 'F59E0B' }] },
@@ -2825,7 +2831,7 @@
                 type: 'bar',
                 data: {
                     labels: NOMBRES_COL_CORTOS,
-                    datasets: [{ label: 'Vehículos', data: NOMBRES_COL_CORTOS.map((_, i) => dashLista.filter(c => c.columna === i + 1).length), backgroundColor: ['#64748b', '#a78bfa', '#38bdf8', '#f59e0b', '#10b981', '#94a3b8'] }]
+                    datasets: [{ label: 'Vehículos', data: NOMBRES_COL_CORTOS.map((_, i) => dashLista.filter(c => c.columna === i + 1).length), backgroundColor: ['#64748b', '#a78bfa', '#38bdf8', '#f59e0b', '#10b981', '#94a3b8', '#ef4444'] }]
                 },
                 options: { ...base, plugins: { legend: { display: false } }, scales: { ...ejes, y: { ...ejes.y, ticks: { color: '#94a3b8', precision: 0 } } } }
             });
